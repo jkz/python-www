@@ -295,6 +295,7 @@ class Connection:
     strict = False
     timeout = 5.0  # seconds
     reconnect_time = 5.0  #seconds
+    exceptions = False
 
     auto_connect = True
     auto_request = False
@@ -312,7 +313,6 @@ class Connection:
         if host:
             self.host = host
         for key, val in kwargs.items():
-            print(key, val)
             setattr(self, key, val)
 
     @property
@@ -405,7 +405,7 @@ class Connection:
         Return a Response object, potentially in a predifined format.
         """
         _response = self.connection.getresponse()
-        response = Response(_response, self.streaming)
+        response = Response(_response, streaming=self.streaming, exceptions=self.exceptions)
 
         # Close the connection if it is not manually handled
         if self.auto_connect:
@@ -438,17 +438,17 @@ class Connection:
     def open(self, *args, **kwargs):
         return self.build_request(*args, **kwargs)()
 
-# Add get, post, ... api to Connection class
-for method in METHODS:
-    @property
-    def action(self, *args, **kwargs):
-        kwargs['method'] = method
+    def get(self, *args, **kwargs):
+        kwargs['method'] = 'GET'
         return self.open(*args, **kwargs)
-    setattr(Connection, method.lower(), action)
-    '''
-    setattr(Connection, method.lower(), property(lambda self, *args, **kwargs:
-        self.open(*args, method=method, **kwargs)))
-        '''
+
+# Add get, post, ... api to Connection class
+'''
+for method in METHODS:
+    setattr(Connection, method.lower(), lambda self, *args, **kwargs:
+            self.open(*args, method=method, **kwargs))
+
+'''
 
 
 class Response:
@@ -462,6 +462,7 @@ class Response:
     #      wrapper should be added with a buffer and an index.
     #TODO: Encoding is not yet handled properly
     #TODO: return format equal to MIME-TYPE header
+    #TODO: Handlers, like redirect, proxy etc
     class Error(Error): pass
     class ParseError(Error): pass
 
@@ -469,10 +470,10 @@ class Response:
         self.response = response
         self.headers = dict(response.getheaders())
 
+        status = self.response.status
         if exceptions:
-            status = self.response.status
             if status >= 400:
-                raise responses[status](response.read)
+                raise responses[status](response.read())
 
         if not streaming:
             self.raw = response.read()
@@ -690,9 +691,9 @@ class Stream(Connection):
 
 # namespace api
 open = lambda url, **kwargs: Request(url=url, **kwargs)()
+
 for method in METHODS:
     globals()[method.lower()] = functools.partial(open, method=method)
-
 
 if __name__ == "__main__":
     import doctest

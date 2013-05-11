@@ -23,3 +23,7 @@ class TestConnection(unittest.TestCase):
         result = str(request)
         expected = 'GET http://jess@example.com/foo/'
         self.assertEqual(result, expected)
+
+    def test_exceptions(self):
+        conn = www.Connection('github.com', secure=True, exceptions=True)
+        self.assertRaises(www.NotFound, lambda: conn.open('/404/'))
