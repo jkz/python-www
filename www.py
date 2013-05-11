@@ -1,5 +1,5 @@
 """
-A sexy urllib and httplib wrapper build to interact with (restful) web API's.
+A sexy urllib and http wrapper for Python 3.
 
 DOES NOT SUPPORT DUPLICATE KEYS.
 
@@ -9,7 +9,7 @@ Contents:
 
     Resource
     URL
-    URI
+    AbsolutePath
     Query
     Request
     Response
@@ -35,33 +35,25 @@ USER_AGENT = '{}/{}'.format(NAME, VERSION)
 
 METHODS = 'GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH', 'OPTIONS'
 
-MODES = 'request', 'debug', 'stream', 'endpoint'
+class Error(Exception): pass
+class HTTPException(Error, http.client.HTTPException): pass
 
-
-class Error(Exception):
-    pass
-
-
-class HTTPError(Error):
-    def __init__(self, e, uri, format, uriparts):
-        self.e = e
-        self.uri = uri
-        self.format = format
-        self.uriparts = uriparts
-        self.response_data = self.e.fp.read()
-
-    def __str__(self):
-        fmt = ("." + self.format) if self.format else ""
-        return (
-            "Server sent status %i for URL: %s%s using parameters: "
-            "(%s)\ndetails: %s" %(
-                self.e.code, self.uri, fmt, self.uriparts,
-                self.response_data))
-
+# This creates an exception class for each http response status.
+# The responses dict has their codes as keys, the global namespace has
+# their constant names from http.client camelcased.
+# e.g. NOT_FOUND becomes NotFound
+responses = {}
+for code, name in http.client.responses.items():
+    name = name.replace(' ', '')
+    class Status(HTTPException):
+        code = code
+    Status.__name__ = name
+    globals()[name] = responses[code] = Status
 
 
 class Query(str):
-    """A querystring builder class.
+    """
+    A querystring builder class.
 
     Turns keyword arguments into a urlencoded querystring.
 
@@ -81,7 +73,7 @@ class Query(str):
             return urllib.parse.urlencode(pairs)
 
 
-class Resource(object):
+class Resource:
     """
     A flexible url builder class. Deconstructs a given url into parts, then
     sets or replaces parts by explicitly passed parts.
@@ -93,7 +85,6 @@ class Resource(object):
     'https://otherhost.net/foo?kitten=fluffy'
     """
     #XXX: A normalize method would be nice
-    #XXX: userinfo would be nice
     #TODO: encoding check
     def __init__(self,
             url='',
@@ -106,40 +97,36 @@ class Resource(object):
             query_string=None,
             fragment=None,
             secure=None,
+            username=None,
+            password=None,
             verbatim=False,
             **kwargs
     ):
-        # Determines whether paramters are combined encoded or verbatim
+        # Determines whether parameters are combined encoded or verbatim
         self.verbatim = verbatim
 
         # Split the url into scheme, port, host, query and path
         _scheme, _netloc, self.path, _query_string, self.fragment = urllib.parse.urlsplit(url)
 
         # Set the connection on self to extract parameters and enable requests.
-        #XXX: Add a mode that does not alter the connection
-        self.connection = connection or Connection()
+        if connection:
+            self.connection = connection
+        else:
+            # split the netlocation into userinfo and hostinfo
+            userinfo, _, hostinfo = _netloc.rpartition('@')
 
-        _host, _, _port = _netloc.partition(':')
+            # extract the username and password
+            _username, _, _password = userinfo.partition(':')
 
-        # Set security level on the connection
-        if secure is not None:
-            self.connection.secure = secure
-        elif _scheme == 'https':
-            self.connection.secure = True
-        elif _scheme == 'http':
-            self.connection.secure = False
+            _host, _, _port = _netloc.partition(':')
 
-        # Set the host
-        if host is not None:
-            self.connection.host = host
-        elif _host:
-            self.connection.host = _host
-
-        # Set the port
-        if port:
-            self.connection.port = port
-        elif _port:
-            self.connection.port = int(_port)
+            self.connection = Connection(
+                host     = host or _host or None,
+                port     = port or (_port and int(_port)) or None,
+                username = username or _username or None,
+                password = password or _password or None,
+                secure   = secure if secure is not None else _scheme == 'https',
+            )
 
         # Override path if explicitly passed
         if path is not None:
@@ -162,6 +149,11 @@ class Resource(object):
     @property
     def query_string(self):
         return Query(self.query, self.verbatim)
+
+    @property
+    def userinfo(self):
+        return (self.connection.username,
+                self.connection.password)
 
     @property
     def host_parts(self):
@@ -194,33 +186,17 @@ class Resource(object):
     def url(self):
         return urllib.parse.urlunsplit(self.parts)
 
-    def __call__(self, method='GET', body=None, headers=None, mode='request',
-            **kwargs):
-        method = method.upper()
-        if method in ('POST', 'PUT', 'PATCH'):
-            if body is None:
-                body = Query(**kwargs)
+    def stream(self, method='GET', body=None, headers=None, **kwargs):
+        return Request(resource=self, method=method, body=body).stream(**kwargs)
 
-        params = method, self.absolute_path, body, headers
-
-        if mode == 'request':
-            return self.connection.fetch(*params)
-        elif mode == 'stream':
-            return self.connection.start(self, **kwargs)
-        elif mode == 'debug':
-            return params
-        elif mode == 'endpoint':
-            return lambda: self.connection.fetch(*params)
-
+    def __call__(self, **kwargs):
+        return Request(resource=self, **kwargs)
 
     def __str__(self):
         """
         Return a string containing the complete url.
         """
         return self.url
-
-for mode in MODES:
-    setattr(Resource, mode, functools.partial(Resource.__call__, mode=mode))
 
 
 class URL(str):
@@ -233,9 +209,9 @@ class AbsolutePath(str):
         return str.__new__(self, Resource(*args, **kwargs).absolute_path)
 
 
-class Handler:
-    def __call__(self, method, url, body, headers):
-        return method, url, body, headers
+def add_user_agent(method, url, body, headers):
+    headers['User-Agent'] = headers.pop('User-Agent', USER_AGENT)
+    return method, url, body, headers
 
 class Request:
     """
@@ -255,29 +231,52 @@ class Request:
             processors = None,
             **kwargs
     ):
-        self.mode = mode
-        self.method = method
         self.resource = resource or Resource(url, **kwargs)
 
+        self.mode = mode
+        self.method = method
         self.headers = headers or {}
-        self.headers['User-Agent'] = self.headers.pop('User-Agent', USER_AGENT)
         self.body = body
         self.data = data or {}
 
+
+        # A processor is a callable that takes 4 arguments
+        # (method, url, body, headers)
+        # And returns a same tuple with possibly modified values
+        self.processors = [add_user_agent]
         if processors:
             if isinstance(processors, collections.Iterable):
-                self.processors = [processors]
+                self.processors.append(processors)
             else:
-                self.processors = processors
+                self.processors.extend(processors)
+
+    @property
+    def params(self):
+        method = self.method.upper()
+
+        url = self.resource.absolute_path
+
+        if self.body is None and self.data and method in ('POST', 'PUT', 'PATCH'):
+            body = Query(**self.data)
         else:
-            self.processors = []
+            body = self.body
+
+        headers = self.headers.copy()
+
+        args = (method, url, body, headers)
+
+        for processor in self.processors:
+            args = processor(*args)
+        return args
+
+    def stream(self, **kwargs):
+        return self.resource.connection.start(self, **kwargs)
 
     def __call__(self):
-        return self.resource(self.method, self.body, self.headers, self.mode,
-                **self.data)
+        return self.resource.connection.fetch(*self.params)
 
     def __str__(self):
-        return '{} {}'.format(self.method, self.resource)
+        return '{} {}'.format(self.method.upper(), self.resource)
 
 
 class Connection:
@@ -306,20 +305,33 @@ class Connection:
 
     connection = None
 
+    username = None
+    password = None
+
     def __init__(self, host=None, **kwargs):
         if host:
             self.host = host
         for key, val in kwargs.items():
+            print(key, val)
             setattr(self, key, val)
 
     @property
     def netloc(self):
         if (self.port is not None
-        and not (self.port == 80 and self.scheme == 'http')
-        and not (self.port == 443 and self.scheme == 'https')):
-            return ':'.join((self.host, str(self.port)))
+        and not (self.port == http.client.HTTP_PORT and self.scheme == 'http')
+        and not (self.port == http.client.HTTPS_PORT and self.scheme == 'https')):
+            host = ':'.join((self.host, str(self.port)))
         else:
-            return self.host
+            host = self.host
+
+        if self.username is not None:
+            if self.password is not None:
+                user = ':'.join((self.username, self.password))
+            else:
+                user = self.username
+            return '@'.join((user, host))
+
+        return host
 
     @property
     def scheme(self):
@@ -439,7 +451,7 @@ for method in METHODS:
         '''
 
 
-class Response(object):
+class Response:
     """
     Response from a callm request.
     Can represent data in different formats by calling the corresponding
@@ -450,14 +462,21 @@ class Response(object):
     #      wrapper should be added with a buffer and an index.
     #TODO: Encoding is not yet handled properly
     #TODO: return format equal to MIME-TYPE header
-    #TODO: raise Exceptions mode, where it raises http status codes
     class Error(Error): pass
+    class ParseError(Error): pass
 
-    def __init__(self, response, streaming=False):
+    def __init__(self, response, streaming=False, exceptions=False):
         self.response = response
         self.headers = dict(response.getheaders())
+
+        if exceptions:
+            status = self.response.status
+            if status >= 400:
+                raise responses[status](response.read)
+
         if not streaming:
             self.raw = response.read()
+
 
     def __getattr__(self, attr):
         """
@@ -496,14 +515,14 @@ class Response(object):
         try:
             return json.loads(self.utf8)
         except Exception as e:
-            raise self.Error("Could not parse json from data!", e)
+            raise self.ParseError("Could not parse json from data!", e)
 
     @property
     def xml(self):
         try:
             return xml.dom.minidom.parseString(self.utf8)
         except Exception as e:
-            raise self.Error("Could not parse xml from data!", e)
+            raise self.ParseError("Could not parse xml from data!", e)
 
     @property
     def query(self):
@@ -515,7 +534,7 @@ class Response(object):
         return self.raw
 
 
-class Listener(object):
+class Listener:
     def on_data(self, data):
         print(data)
         return True
@@ -527,6 +546,15 @@ class Listener(object):
     def on_timeout(self):
         """Called when stream connection times out"""
         return True
+
+class WriteListener(Listener):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def on_data(self, data):
+        with open(self.filename, 'a') as handle:
+            handle.write(data)
+
 
 class Stream(Connection):
     auto_connect = False
@@ -661,8 +689,7 @@ class Stream(Connection):
 
 
 # namespace api
-open = lambda *a, **kw: Request(*a, **kw)()
-
+open = lambda url, **kwargs: Request(url=url, **kwargs)()
 for method in METHODS:
     globals()[method.lower()] = functools.partial(open, method=method)
 
