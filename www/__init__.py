@@ -234,13 +234,18 @@ class Request:
         self.resource = resource or Resource(url, **kwargs)
 
         self.mode = mode
-        self.method = method
+        self.method = method.upper()
         self.headers = headers or {}
         self.body = body
         self.data = data or {}
 
 
-        # A processor is a callable that takes 4 arguments
+        # A preprocessor is a callable that takes the request object
+        # and knows the class. It changes the request object to make
+        # alterations.
+
+
+        # A postprocessor is a callable that takes 4 arguments
         # (method, url, body, headers)
         # And returns a same tuple with possibly modified values
         self.processors = [add_user_agent]
@@ -252,6 +257,11 @@ class Request:
 
     @property
     def params(self):
+        if not hasattr(self, '_preprocessed'):
+            self._preprocessed = True
+            for processor in self.preprocessors:
+                processor(self)
+
         method = self.method.upper()
 
         url = self.resource.absolute_path
@@ -265,7 +275,7 @@ class Request:
 
         args = (method, url, body, headers)
 
-        for processor in self.processors:
+        for processor in self.postprocessors:
             args = processor(*args)
         return args
 
@@ -273,6 +283,7 @@ class Request:
         return self.resource.connection.start(self, **kwargs)
 
     def __call__(self):
+        self._preprocess()
         return self.resource.connection.fetch(*self.params)
 
     def __str__(self):
