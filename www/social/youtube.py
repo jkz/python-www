@@ -1,17 +1,16 @@
-import callm
-import authlib
-import authlib.oauth2 as oauth2
+import www
 
-class Error(Exception):
-    pass
+from www.auth as auth
+from www.auth import oauth2
 
+class Error(www.Exception): pass
+class ParseError(Error): pass
 
-class ParseError(Error):
-    pass
+class Consumer(oauth2.Consumer): pass
+class Token(oauth2.Token): pass
 
-
-class Auth(authlib.Auth):
-    def __call__(self, method, uri, body='', headers={}):
+class Auth(auth.Auth):
+    def __call__(self, request):
         """
         Add a token or id parameter to the query string.
 
@@ -19,13 +18,8 @@ class Auth(authlib.Auth):
 
         Does not support duplicate keys.
         """
-
-        resource = callm.Resource(uri)
-
         if self.token:
-            headers['Authorization'] = 'Bearer %s' % self.token.key
-
-        return method, resource.uri, body, headers
+            request.headers['Authorization'] = 'Bearer %s' % self.token.key
 
 
 class Provider(oauth2.Provider):
@@ -59,7 +53,7 @@ class Provider(oauth2.Provider):
             raise Error(error['type'] + error['message'])
 
 
-class API(callm.Connection):
+class API(www.Connection):
     host = 'www.googleapis.com'
     secure = True
     authenticate_uri = 'https://www.facebook.com/dialog/oauth'
@@ -84,19 +78,4 @@ class API(callm.Connection):
             part = ','.join(part)
 
         return self.GET('/videos', id=uid, part=part)
-
-
-class ConsumerInterface(oauth2.ConsumerInterface):
-    API = API
-    Auth = Auth
-    Provider = Provider
-
-
-class Consumer(oauth2.Consumer):
-    API = API
-    Auth = Auth
-    Provider = Provider
-
-class TokenInterface(oauth2.TokenInterface): pass
-class Token(oauth2.Token): pass
 

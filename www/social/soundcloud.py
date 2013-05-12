@@ -1,12 +1,13 @@
-import callm
-import authlib.oauth2 as oauth2
+import www
+import www.auth import oauth2
 
-class Error(Exception):
-    pass
+class Error(www.Error): pass
 
+class Consumer(oauth2.Consumer): pass
+class Token(oauth2.Token): pass
 
 class Auth(oauth2.Auth):
-    def __call__(self, method, uri, body='', headers={}):
+    def __call__(self, request):
         """
         Add a token or id parameter to the query string.
 
@@ -14,15 +15,10 @@ class Auth(oauth2.Auth):
 
         Does not support duplicate keys.
         """
-
-        resource = callm.Resource(uri)
-
         if self.token:
-            resource.query['oauth_token'] = self.token.key
+            request.resource.query['oauth_token'] = self.token.key
         elif self.consumer:
-            resource.query['client_id'] = self.consumer.key
-
-        return method, resource.uri, body, headers
+            request.resource.query['client_id'] = self.consumer.key
 
 class Provider(oauth2.Provider):
     secure = True
@@ -38,7 +34,7 @@ class Provider(oauth2.Provider):
                 grant_type=grant_type).json
 
 
-class API(callm.Connection):
+class API(www.Connection):
     secure = True
     host = 'api.soundcloud.com'
 
@@ -62,17 +58,3 @@ class API(callm.Connection):
     def get_track(self, uid):
         return self.GET('/tracks/%s.json' % uid)
 
-
-class ConsumerInterface(oauth2.ConsumerInterface):
-    API = API
-    Auth = Auth
-    Provider = Provider
-
-
-class Consumer(oauth2.Consumer):
-    API = API
-    Auth = Auth
-    Provider = Provider
-
-class TokenInterface(oauth2.TokenInterface): pass
-class Token(oauth2.Token): pass

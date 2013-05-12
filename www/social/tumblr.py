@@ -1,16 +1,15 @@
-import callm
-import authlib.oauth as oauth
+import www
+from www.auth import oauth
+from www.utils import default_kwargs
 
-#TODO utils is still an app
-from utils.decorators import default_kwargs
+class Error(www.Error): pass
 
-class Error(Exception):
-    pass
+class Consumer(oauth.Consumer): pass
+class Token(oauth.Token): pass
 
 class Auth(oauth.Auth):
-    def __call__(self, method, uri, body='', headers={}):
-        resource = callm.Resource(uri)
-        path = resource.path
+    def __call__(self, request):
+        path = request.resource.path
         if (path.startswith('/v2/tagged')
         or path.startswith('/v2/blog/')
         and ((path.endswith('/info')
@@ -18,9 +17,9 @@ class Auth(oauth.Auth):
             or path.endswith('/posts')
             or path.endswith('/posts/text')
             or path.endswith('/posts/photo')))):
-                resource.query['api_key'] = self.consumer.key
-                return method, resource.uri, body, headers
-        return super(Auth, self).__call__(method, uri, body, headers)
+                request.resource.query['api_key'] = self.consumer.key
+        else:
+            super(Auth, self).__call__(request)
 
 
 class Provider(oauth.Provider):
@@ -35,7 +34,7 @@ def blogname(name):
         name += '.tumblr.com'
     return name
 
-class API(callm.Connection):
+class API(www.Connection):
     host = 'api.tumblr.com'
     secure = False
 
@@ -69,17 +68,3 @@ class API(callm.Connection):
     def get_tagged(self, tag):
         return self.GET('/v2/tagged', tag=tag).json
 
-
-class ConsumerInterface(oauth.ConsumerInterface):
-    Auth = Auth
-    API = API
-    Provider = Provider
-
-
-class Consumer(oauth.Consumer):
-    Auth = Auth
-    API = API
-    Provider = Provider
-
-class TokenInterface(oauth.TokenInterface): pass
-class Token(oauth.Token): pass

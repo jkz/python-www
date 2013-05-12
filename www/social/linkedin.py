@@ -1,13 +1,12 @@
-import callm
-import authlib.oauth as oauth
+import www
+from www.auth import oauth
 
-class Error(Exception):
+class Error(www.Error):
     pass
 
 class Auth(oauth.Auth):
-    def __call__(self, method, uri, body='', headers={}):
-        resource = callm.Resource(uri)
-        path = resource.path
+    def __call__(self, request):
+        path = request.resource.path
         if (path.startswith('/v2/tagged')
         or path.startswith('/v2/blog/')
         and ((path.endswith('/info')
@@ -15,9 +14,9 @@ class Auth(oauth.Auth):
             or path.endswith('/posts')
             or path.endswith('/posts/text')
             or path.endswith('/posts/photo')))):
-                resource.query['api_key'] = self.consumer.key
-                return method, resource.uri, body, headers
-        return super(Auth, self).__call__(method, uri, body, headers)
+                request.resource.query['api_key'] = self.consumer.key
+        else:
+            super(Auth, self).__call__(request)
 
 
 class Provider(oauth.Provider):
@@ -28,7 +27,7 @@ class Provider(oauth.Provider):
     authorize_uri = 'https://www.linkedin.com/uas/oauth/authenticate'
 
 
-class API(callm.Connection):
+class API(www.Connection):
     secure = True
     host = 'api.linkedin.com'
 
@@ -53,16 +52,5 @@ class API(callm.Connection):
         return self.GET(path, headers=headers).json
 
 
-class ConsumerInterface(oauth.ConsumerInterface):
-    Auth = Auth
-    API = API
-    Provider = Provider
-
-
-class Consumer(oauth.Consumer):
-    Auth = Auth
-    API = API
-    Provider = Provider
-
-class TokenInterface(oauth.TokenInterface): pass
+class Consumer(oauth.Consumer): pass
 class Token(oauth.Token): pass

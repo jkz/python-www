@@ -5,12 +5,12 @@ This is Version 1.0 of the Last.fm authentication API specification.
 
 http://www.last.fm/ap/webauth
 """
-import callm
 import hashlib
 
-from authlib import interface
+import www
+import www.auth
 
-class Error(Exception):
+class Error(www.Error):
     '''
     errors = {
         2 : INVALID_SERVICE
@@ -50,13 +50,13 @@ class Error(Exception):
     '''
     pass
 
-class Auth(interface.Auth):
+class Auth(www.auth.Auth):
     def __init__(self, consumer, token=None, **options):
         self.consumer = consumer
         self.token = token
         self.options = options
 
-    def __call__(self, method, uri, body='', headers={}):
+    def __call__(self, request):
         """
         5. Make authenticated web service calls
         You can now sign your web service calls with a method signature,
@@ -72,14 +72,11 @@ class Auth(interface.Auth):
             api_sig (Required) : Your API method signature, constructed as
                 explained in Section 6
         """
-        resource = callm.Resource(uri)
-        resource.query['api_key'] = self.consumer.key
+        request.resource.query['api_key'] = self.consumer.key
         if self.token:
-            resource.query['sk'] = self.token.key
-        resource.query.update(self.options)
-        resource.query['api_sig'] = self.signature(**resource.query)
-        uri = resource.uri
-        return method, resource.uri, body, headers
+            request.resource.query['sk'] = self.token.key
+        request.resource.query.update(self.options)
+        request.resource.query['api_sig'] = self.signature(**resource.query)
 
     def signature(self, **query):
         """
@@ -102,14 +99,14 @@ class Auth(interface.Auth):
         string to be hashed. The hashing operation should return a
         32-character hexadecimal md5 hash.
         """
-        param = ''.join('%s%s' % (k, v) for k, v in sorted(query.iteritems()))
+        param = ''.join('%s%s' % (k, v) for k, v in sorted(query.items()))
         param += self.consumer.secret
         param = param.encode('utf-8')
         md5 = hashlib.md5()
         md5.update(param)
         return md5.hexdigest()
 
-class API(callm.Connection):
+class API(www.Connection):
     host = 'ws.audioscrobbler.com'
     secure = False
 #    format = 'json'
@@ -138,7 +135,7 @@ class API(callm.Connection):
 
             http://www.last.fm/api/auth/?api_key=xxx&cb=http://example.com
         """
-        return callm.URL(self.auth_uri, verbatim=False,
+        return www.URL(self.auth_uri, verbatim=False,
                 api_key=self.auth.consumer.key, cb=redirect_uri, **kwargs)
 
     def auth_callback(self, token, **kwargs):
@@ -193,7 +190,7 @@ class API(callm.Connection):
         application on their Last.fm settings screen, rendering session keys
         invalid.
         """
-        return self.GET('/2.0/', method='auth.getSession', token=token, **kwargs)
+        return self.GET('/2.0/', query={'method': 'auth.getSession'}, token=token, **kwargs)
 
 
     def get_user(self, user=None, **params):
@@ -204,7 +201,7 @@ class API(callm.Connection):
         """
         if user:
             params['user'] = user
-        return self.GET('/2.0/', method='user.getInfo', format='json', **params).json
+        return self.GET('/2.0/', query={'method': 'user.getInfo'}, format='json', **params).json
 
     def get_artist(self, artist, **params):
         """
@@ -217,7 +214,7 @@ class API(callm.Connection):
         """
         if not 'username' in params and self.auth.token:
             params['username'] = self.auth.token.user.name
-        return self.GET('/2.0/', method='artist.getInfo', format='json',
+        return self.GET('/2.0/', query{'method': 'artist.getInfo'}, format='json',
                artist=artist, **params).json
 
     def get_library(self, artist=None, album=None, **params):
@@ -227,7 +224,7 @@ class API(callm.Connection):
             params['artist'] = artist
         if album:
             params['album'] = album
-        return self.GET('/2.0/', method='library.getTracks', format='json', **params).json
+        return self.GET('/2.0/', query={'method': 'library.getTracks'}, format='json', **params).json
 
     def get_track(self, artist, track, **params):
         """
@@ -244,16 +241,14 @@ class API(callm.Connection):
         """
         if not 'username' in params and self.auth.token:
             params['username'] = self.auth.token.user.name
-        return self.GET('/2.0/', method='track.getInfo', format='json',
+        return self.GET('/2.0/', query={'method': 'track.getInfo'}, format='json',
                 track=track, artist=artist, **params).json
 
 
-class ConsumerInterface(interface.Consumer):
-    key = None
-    secret = None
-
-    Provider = API = API
-    Auth = Auth
+class Consumer(www.auth.Consumer):
+    def __init__(self, key, secret):
+        self.key = key
+        self.secret = secret
 
     def auth_process(self, session_token):
         """
@@ -265,18 +260,7 @@ class ConsumerInterface(interface.Consumer):
         return 'lastfm.App(%s)' % self.key
 
 
-class TokenInterface(interface.Token):
-    key = None
-    consumer = None
-
-
-class Consumer(ConsumerInterface):
-    def __init__(self, key, secret):
-        self.key = key
-        self.secret = secret
-
-
-class Token(TokenInterface):
+class Token(www.auth.Token):
     def __init__(self, key, consumer=None):
         self.key = key
         self.consumer = consumer

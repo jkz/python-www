@@ -1,7 +1,6 @@
-import functools
-
 import www
 from www.auth import oauth
+from www.utils import default_kwargs
 
 
 class Consumer(oauth.Consumer):
@@ -18,17 +17,6 @@ class Provider(www.Connection):
 
 
 class Error(Exception): pass
-
-def default_kwargs(**defaults):
-    def wrap(func):
-        @functools.wraps(func)
-        def funk(*args, **kwargs):
-            # Copy the defaults so they don't get messed up in place
-            _kwargs = defaults.copy()
-            _kwargs.update(kwargs)
-            return func(*args, **_kwargs)
-        return funk
-    return wrap
 
 class API(www.Connection):
     host = 'api.twitter.com'
