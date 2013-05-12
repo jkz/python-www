@@ -209,9 +209,9 @@ class AbsolutePath(str):
         return str.__new__(self, Resource(*args, **kwargs).absolute_path)
 
 
-def add_user_agent(method, url, body, headers):
-    headers['User-Agent'] = headers.pop('User-Agent', USER_AGENT)
-    return method, url, body, headers
+def add_user_agent(request):
+    request.headers['User-Agent'] = request.headers.pop('User-Agent',
+            USER_AGENT)
 
 class Request:
     """
@@ -240,14 +240,9 @@ class Request:
         self.data = data or {}
 
 
-        # A preprocessor is a callable that takes the request object
+        # A processor is a callable that takes the request object
         # and knows the class. It changes the request object to make
-        # alterations.
-
-
-        # A postprocessor is a callable that takes 4 arguments
-        # (method, url, body, headers)
-        # And returns a same tuple with possibly modified values
+        # alterations to the request.
         self.processors = [add_user_agent]
         if processors:
             if isinstance(processors, collections.Iterable):
@@ -257,9 +252,9 @@ class Request:
 
     @property
     def params(self):
-        if not hasattr(self, '_preprocessed'):
+        if not hasattr(self, '_processed'):
             self._preprocessed = True
-            for processor in self.preprocessors:
+            for processor in self.processors:
                 processor(self)
 
         method = self.method.upper()
@@ -272,18 +267,12 @@ class Request:
             body = self.body
 
         headers = self.headers.copy()
-
-        args = (method, url, body, headers)
-
-        for processor in self.postprocessors:
-            args = processor(*args)
-        return args
+        return (method, url, body, headers)
 
     def stream(self, **kwargs):
         return self.resource.connection.start(self, **kwargs)
 
     def __call__(self):
-        self._preprocess()
         return self.resource.connection.fetch(*self.params)
 
     def __str__(self):
@@ -313,7 +302,7 @@ class Connection:
 
     headers = {}
 
-    processors = ()
+    processors = []  #XXX care, this is a mutable class property
 
     connection = None
 
