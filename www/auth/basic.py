@@ -27,14 +27,13 @@ class Auth(www.auth.Auth):
         self.token = token
         self.options = options
 
-    def __call__(self, url, method, headers, body):
+    def __call__(self, request):
         """
         Return signed request parameters.
         """
         if self.token:
-            headers['Authorization'] = encode_pair(
+            request.headers['Authorization'] = encode_pair(
                     self.token.username, self.token.password)
-        return url, method, headers, body
 
 
 class Provider(www.Connection):
@@ -42,10 +41,7 @@ class Provider(www.Connection):
         return callback_url
 
 
-class Consumer(www.auth.Consumer):
-    pass
-
-
+class Consumer(www.auth.Consumer): pass
 class Token(www.auth.Token):
     consumer = Consumer()
 

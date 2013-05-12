@@ -1,7 +1,4 @@
-import functools
-import time
 import unittest
-
 import www
 
 class TestResource(unittest.TestCase):
