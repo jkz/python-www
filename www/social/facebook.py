@@ -1,8 +1,10 @@
-import www
 from www.auth import oauth2
 
-class Error(Exception): pass
+class Error(Error): pass
 class ParseError(Error): pass
+
+class Consumer(oauth2.Consumer): pass
+class Token(oauth2.Token): pass
 
 class Auth(oauth2.Auth):
     def __call__(self, request):
@@ -19,14 +21,16 @@ class Auth(oauth2.Auth):
             request.resource.query['client_id'] = self.consumer.key
 
 
-class Provider(oauth2.Provider):
-    secure = True
-    host = 'graph.facebook.com'
-    exchange_code_url = '/oauth/access_token'
-    authenticate_uri = 'https://www.facebook.com/dialog/oauth'
+class Authority(oauth2.Authority):
+    AUTHENTICATE_URL = 'https://www.facebook.com/dialog/oauth'
+    EXCHANGE_CODE_URL = '/oauth/access_token'
+
+    class Connection(oauth2.Authority.Connection):
+        secure = True
+        host = 'graph.facebook.com'
 
     def exchange_code(self, code, redirect_uri):
-        response = super(Provider, self).exchange_code(code, redirect_uri)
+        response = super(Authority, self).exchange_code(code, redirect_uri)
         try:
             return response.query
         except ValueError:
@@ -34,11 +38,10 @@ class Provider(oauth2.Provider):
             raise Error(error['type'] + error['message'])
 
 
-class API(www.Connection):
-    secure = True
-    host = 'graph.facebook.com'
-    exchange_code_url = '/oauth/access_token'
-    authenticate_uri = 'https://www.facebook.com/dialog/oauth'
+class API(oauth2.Service):
+    class Connection(oauth2.Service.Connection):
+        secure = True
+        host = 'graph.facebook.com'
 
     def get_obj(self, uid, **options):
         return self.GET(uid, **options).json
@@ -54,6 +57,3 @@ class API(www.Connection):
     def me(self):
         return self.get_user('me')
 
-
-class Consumer(oauth2.Consumer): pass
-class Token(oauth2.Token): pass

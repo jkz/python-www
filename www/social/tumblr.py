@@ -22,11 +22,12 @@ class Auth(oauth.Auth):
             super(Auth, self).__call__(request)
 
 
-class Provider(oauth.Provider):
-    host = 'www.tumblr.com'
-    request_token_path = '/oauth/request_token'
-    access_token_path = '/oauth/access_token'
-    authorize_uri = 'http://www.tumblr.com/oauth/authorize'
+class Authority(oauth.Authority):
+    class Connection(oauth.Authority.Connection):
+        host = 'www.tumblr.com'
+        request_token_path = '/oauth/request_token'
+        access_token_path = '/oauth/access_token'
+        authorize_uri = 'http://www.tumblr.com/oauth/authorize'
 
 
 def blogname(name):
@@ -34,9 +35,10 @@ def blogname(name):
         name += '.tumblr.com'
     return name
 
-class API(www.Connection):
-    host = 'api.tumblr.com'
-    secure = False
+class Authority(oauth.Service):
+    class Connection(oauth.Service.Connection):
+        host = 'api.tumblr.com'
+        secure = False
 
     # blog names can be either standard:
     #
@@ -52,7 +54,7 @@ class API(www.Connection):
             limit=20,
             offset=0)
     def get_posts(self, blog, type=None, **kwargs):
-        return self.GET('/v2/blog/%s/posts%s' % (blogname(blog),
+        return self.connection.GET('/v2/blog/%s/posts%s' % (blogname(blog),
             type and '/' + type or ''), **kwargs).json
 
 
@@ -60,11 +62,11 @@ class API(www.Connection):
         return self.get_posts(blog, id=uid, **kwargs)
 
     def get_user(self):
-        return self.GET('/v2/user/info').json
+        return self.connection.GET('/v2/user/info').json
 
     def get_blog(self, blog):
-        return self.GET('/v2/blog/%s/info' % blogname(blog)).json
+        return self.connection.GET('/v2/blog/%s/info' % blogname(blog)).json
 
     def get_tagged(self, tag):
-        return self.GET('/v2/tagged', tag=tag).json
+        return self.connection.GET('/v2/tagged', tag=tag).json
 

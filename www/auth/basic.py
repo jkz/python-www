@@ -1,3 +1,4 @@
+import functools
 import base64
 
 import www
@@ -7,24 +8,25 @@ class Error(www.auth.Error):
     pass
 
 
-def encode_pair(username, password):
-    pair = '{}:{}'.format(username, password)
-    enc_pair = base64.b64encode(pair)
-    return 'Basic {}'.format(enc_pair)
-
-
-def decode_pair(header):
-    if not header[:6] == ('Basic '):
-        raise Error('Non-Basic Authorization')
-    enc_pair = header[6:]
-    pair = base64.b64decode(enc_pair)
-    return dict(zip(('username', 'password'), pair.split(':', 2)))
-
 
 class Auth(www.auth.Auth):
-    def __init__(self, consumer, token=None, **options):
+    def encode_pair(self, username, password):
+        pair = '{}:{}'.format(username, password).encode(self.encoding)
+        b64pair = base64.b64encode(pair)
+        return 'Basic {}'.format(b64pair.decode())
+
+
+    def decode_pair(self, header):
+        if not header[:6] == ('Basic '):
+            raise Error('Non-Basic Authorization')
+        pair = header[6:]
+        b64pair = base64.b64decode(pair)
+        return dict(zip(('username', 'password'), b64pair.split(':', 2)))
+
+    def __init__(self, consumer=None, token=None, encoding='ISO-8859-1', **options):
         self.consumer = consumer
         self.token = token
+        self.encoding = encoding
         self.options = options
 
     def __call__(self, request):
@@ -32,20 +34,31 @@ class Auth(www.auth.Auth):
         Return signed request parameters.
         """
         if self.token:
-            request.headers['Authorization'] = encode_pair(
+            request.headers['Authorization'] = self.encode_pair(
                     self.token.username, self.token.password)
 
+class Service(www.auth.Service):
+    pass
 
-class Provider(www.Connection):
+
+class Authority(Service):
     def get_redirect_url(self, callback_url):
         return callback_url
 
 
 class Consumer(www.auth.Consumer): pass
-class Token(www.auth.Token):
-    consumer = Consumer()
 
+class Token(www.auth.Token):
     def __init__(self, username, password):
         self.username = username
         self.password = password
 
+
+def create_request(*args, **kwargs):
+    token = Token(kwargs.pop('username'), kwargs.pop('password'))
+    request = www.Request(*args, **kwargs)
+    auth = Auth(token=token)
+    request.processors.append(auth)
+    return request
+
+www.implement_methods(create_request, globals())

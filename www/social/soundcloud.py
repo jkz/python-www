@@ -20,41 +20,42 @@ class Auth(oauth2.Auth):
         elif self.consumer:
             request.resource.query['client_id'] = self.consumer.key
 
-class Provider(oauth2.Provider):
-    secure = True
-    host = 'api.soundcloud.com'
-    exchange_code_url = '/oauth2/token'
-    authenticate_uri = 'https://soundcloud.com/connect'
+class Authority(oauth2.Authority)
+    AUTHENTICATE_URL = 'https://soundcloud.com/connect'
+    EXCHANGE_CODE_URL = '/oauth2/token'
 
+    class Connection(oauth2.Authority.Connection):
+        secure = True
+        host = 'api.soundcloud.com'
 
     #XXX: This could be accomplishable by a 'format' attribute
     #format = 'json'
     def exchange_code(self, code, redirect_uri, grant_type):
-        return super(Provider, self).exchange_code(code, redirect_uri,
+        return super(Authority, self).exchange_code(code, redirect_uri,
                 grant_type=grant_type).json
 
+class API(oauth2.Service):
+    class Connection(oauth2.Service.Connection):
+        secure = True
+        host = 'api.soundcloud.com'
 
-class API(www.Connection):
-    secure = True
-    host = 'api.soundcloud.com'
-
-    format = 'json'
+        format = 'json'
 
     def me(self):
-        return self.GET('/me.json')
+        return self.connection.GET('/me.json')
 
     def get_my_tracks(self):
-        return self.GET('/me/tracks.json')
+        return self.connection.GET('/me/tracks.json')
 
     def get_my_own_activities(self):
-        return self.GET('/me/activities/all/own.json')
+        return self.connection.GET('/me/activities/all/own.json')
 
     def get_user(self, uid):
-        return self.GET('/users/%s.json' % uid)
+        return self.connection.GET('/users/%s.json' % uid)
 
     def get_user_tracks(self, uid):
-        return self.GET('/users/%s/tracks.json' % uid)
+        return self.connection.GET('/users/%s/tracks.json' % uid)
 
     def get_track(self, uid):
-        return self.GET('/tracks/%s.json' % uid)
+        return self.connection.GET('/tracks/%s.json' % uid)
 

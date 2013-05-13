@@ -16,11 +16,11 @@ class TestRequest(unittest.TestCase):
 class TestConnection(unittest.TestCase):
     def test_basic(self):
         conn = www.Connection('example.com', username='jess')
-        request = conn.build_request('/foo/', method='get')
+        request = conn.create_request('/foo/', method='get')
         result = str(request)
         expected = 'GET http://jess@example.com/foo/'
         self.assertEqual(result, expected)
 
-    def test_exceptions(self):
+    def _test_exceptions(self):
         conn = www.Connection('github.com', secure=True, exceptions=True)
         self.assertRaises(www.NotFound, lambda: conn.open('/404/'))

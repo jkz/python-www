@@ -12,17 +12,16 @@ class Error(www.auth.Error):
     pass
 
 def percent_encode(s):
-    return urllib.parse.quote(s, '~')
+    return urllib.parse.quote(str(s).encode('utf-8'), '~')
 
 def percent_encode_dict(d):
     return {percent_encode(key) : percent_encode(val) for key, val in d.items()}
 
 def normalize_url(url):
-    return www.URL(
-            scheme=resource.connection.scheme,
-            host=resource.connection.host,
-            port=resource.connection.port,
-            path=resource.connection.path)
+    resource = www.Resource(url)
+    resource.fragment = None
+    resource.query = None
+    return resource.url
 
 def build_base_string(method, url, parameter_string):
     # Prepare url by stripping fragments and query string
@@ -61,7 +60,7 @@ class Auth(www.auth.Auth):
         mac = hmac.new(key, raw, hashlib.sha1)
         dig = mac.digest()
         sig = base64.b64encode(dig)
-        return sig
+        return sig.decode()
 
     def header(self, method, uri, **other_params):
         header = {}
@@ -111,12 +110,13 @@ class Auth(www.auth.Auth):
         params.update(request.resource.query)
         params.update(request.data)
 
-        request.headers['Authorization'] = self.header(method, uri, **params)
+        request.headers['Authorization'] = self.header(request.method,
+                request.resource.absolute_path, **params)
 
 
 #TODO: detailed error messages
 #TODO: GET or POST?
-class Service(www.Connection):
+class Authority(www.auth.Service):
     """
     Represents an authentication service.
 
@@ -125,8 +125,7 @@ class Service(www.Connection):
     REQUEST_TOKEN_PATH = None
     ACCESS_TOKEN_PATH = None
 
-    authorize_uri = None
-    authenticate_uri = None
+    AUTHENTICATE_URL = None
 
     def get_request_token(self):
         response = self.POST(self.REQUEST_TOKEN_PATH)
@@ -142,12 +141,8 @@ class Service(www.Connection):
             raise Error('Invalid response while obtaining access token.')
         return response.query
 
-    # TODO: If one is missing, use the other
     def get_authenticate_url(self, **kwargs):
-        return www.URL(self.authenticate_uri, **kwargs)
-
-    def get_authorize_url(self, **kwargs):
-        return www.URL(self.authorize_uri, **kwargs)
+        return www.URL(self.AUTHENTICATE_URL, **kwargs)
 
 
 class Consumer(www.auth.Consumer):
@@ -161,3 +156,21 @@ class Token(www.auth.Token):
         self.key = key
         self.secret = secret
 
+
+
+def create_request(url, consumer_key, consumer_secret, token_key=None,
+        token_secret=None, **kwargs):
+
+    consumer = Consumer(consumer_key, consumer_secret)
+
+    if token_key:
+        token = Token(token_key, token_secret)
+    else:
+        token = None
+
+    request = www.Request(**kwargs)
+    auth = consumer.Authority.Auth(consumer=consumer, token=token)
+    request.processors.append(auth)
+    return request
+
+www.implement_methods(create_request, globals())

@@ -106,10 +106,11 @@ class Auth(www.auth.Auth):
         md5.update(param)
         return md5.hexdigest()
 
-class API(www.Connection):
-    host = 'ws.audioscrobbler.com'
-    secure = False
-#    format = 'json'
+class API(www.auth.Service):
+    class Connection(www.auth.Service.Connection):
+        host = 'ws.audioscrobbler.com'
+        secure = False
+    #    format = 'json'
 
     auth_uri = 'http://www.last.fm/api/auth/'
 
@@ -190,7 +191,7 @@ class API(www.Connection):
         application on their Last.fm settings screen, rendering session keys
         invalid.
         """
-        return self.GET('/2.0/', query={'method': 'auth.getSession'}, token=token, **kwargs)
+        return self.connection.GET('/2.0/', query={'method': 'auth.getSession'}, token=token, **kwargs)
 
 
     def get_user(self, user=None, **params):
@@ -201,7 +202,7 @@ class API(www.Connection):
         """
         if user:
             params['user'] = user
-        return self.GET('/2.0/', query={'method': 'user.getInfo'}, format='json', **params).json
+        return self.connection.GET('/2.0/', query={'method': 'user.getInfo'}, format='json', **params).json
 
     def get_artist(self, artist, **params):
         """
@@ -214,7 +215,7 @@ class API(www.Connection):
         """
         if not 'username' in params and self.auth.token:
             params['username'] = self.auth.token.user.name
-        return self.GET('/2.0/', query{'method': 'artist.getInfo'}, format='json',
+        return self.connection.GET('/2.0/', query{'method': 'artist.getInfo'}, format='json',
                artist=artist, **params).json
 
     def get_library(self, artist=None, album=None, **params):
@@ -224,7 +225,7 @@ class API(www.Connection):
             params['artist'] = artist
         if album:
             params['album'] = album
-        return self.GET('/2.0/', query={'method': 'library.getTracks'}, format='json', **params).json
+        return self.connection.GET('/2.0/', query={'method': 'library.getTracks'}, format='json', **params).json
 
     def get_track(self, artist, track, **params):
         """
@@ -241,7 +242,7 @@ class API(www.Connection):
         """
         if not 'username' in params and self.auth.token:
             params['username'] = self.auth.token.user.name
-        return self.GET('/2.0/', query={'method': 'track.getInfo'}, format='json',
+        return self.connection.GET('/2.0/', query={'method': 'track.getInfo'}, format='json',
                 track=track, artist=artist, **params).json
 
 
@@ -249,15 +250,6 @@ class Consumer(www.auth.Consumer):
     def __init__(self, key, secret):
         self.key = key
         self.secret = secret
-
-    def auth_process(self, session_token):
-        """
-        Return a user object
-        """
-        raise NotImplementedError
-
-    def __unicode__(self):
-        return 'lastfm.App(%s)' % self.key
 
 
 class Token(www.auth.Token):

@@ -22,11 +22,12 @@ class Auth(auth.Auth):
             request.headers['Authorization'] = 'Bearer %s' % self.token.key
 
 
-class Provider(oauth2.Provider):
-    host = 'accounts.google.com'
-    secure = True
-    authenticate_uri = 'https://accounts.google.com/o/oauth2/auth'
-    exchange_code_url = '/o/oauth2/token'
+class Authority(oauth2.Authority):
+    class Provider(oauth2.Authority.Connection):
+        host = 'accounts.google.com'
+        secure = True
+        authenticate_uri = 'https://accounts.google.com/o/oauth2/auth'
+        exchange_code_url = '/o/oauth2/token'
 
     def request_code(self, redirect_uri, scope=None, access_type='offline',
             state=None, approval_prompt='auto'):
@@ -44,7 +45,7 @@ class Provider(oauth2.Provider):
                 **params)
 
     def exchange_code(self, code, redirect_uri):
-        response = super(Provider, self).exchange_code(code, redirect_uri,
+        response = super(Authority, self).exchange_code(code, redirect_uri,
                 grant_type='authorization_code')
         try:
             return response.query
@@ -53,15 +54,16 @@ class Provider(oauth2.Provider):
             raise Error(error['type'] + error['message'])
 
 
-class API(www.Connection):
-    host = 'www.googleapis.com'
-    secure = True
-    authenticate_uri = 'https://www.facebook.com/dialog/oauth'
+class API(oauth2.Service):
+    class Connection(oauth2.Service.Connection):
+        host = 'www.googleapis.com'
+        secure = True
+        authenticate_uri = 'https://www.facebook.com/dialog/oauth'
 
-    format = 'json'
+        format = 'json'
 
     def GET(self, path, **options):
-        return super(API, self).GET('/youtube/v3' + path, **options)
+        return self.connection.GET('/youtube/v3' + path, **options)
 
     def get_channel(self, uid, part=None, **options):
         if part is None:

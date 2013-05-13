@@ -148,7 +148,8 @@ class Resource:
 
     @property
     def query_string(self):
-        return Query(self.query, self.verbatim)
+        if self.query:
+            return Query(self.query, self.verbatim)
 
     @property
     def userinfo(self):
@@ -246,16 +247,22 @@ class Request:
         self.processors = [add_user_agent]
         if processors:
             if isinstance(processors, collections.Iterable):
-                self.processors.append(processors)
-            else:
                 self.processors.extend(processors)
+            else:
+                self.processors.append(processors)
+
+    def prepare(self):
+        """Run all the processors on this request object"""
+        if hasattr(self, '_prepared') and self._prepared:
+            return
+        self._prepared = True
+
+        for processor in self.processors:
+            processor(self)
 
     @property
     def params(self):
-        if not hasattr(self, '_processed'):
-            self._preprocessed = True
-            for processor in self.processors:
-                processor(self)
+        self.prepare()
 
         method = self.method.upper()
 
@@ -384,8 +391,7 @@ class Connection:
 
     def request(self, method, url, body=None, headers={}):
         """
-        Issue a request on the connection. Open a connection if needed and
-        apply all processors to the request parameters.
+        Issue a request on the connection. Open a connection if needed.
         """
         # Open a connection if it is not manually handled
         if self.auto_connect:
@@ -394,9 +400,6 @@ class Connection:
         _headers.update(headers)
 
         params = method, url, body, _headers
-
-        for processor in self.processors:
-            params = processor(params)
 
         self.connection.request(*params)
 
@@ -422,9 +425,9 @@ class Connection:
         self.request(*args, **kwargs)
         return self.getresponse()
 
-    def build_request(self, *args, **kwargs):
+    def create_request(self, *args, **kwargs):
         """
-        Return a Request constructor
+        Return a request object.
         """
         method = kwargs.pop('method', self.__class__.method)
         secure = kwargs.pop('secure', self.__class__.secure)
@@ -436,7 +439,7 @@ class Connection:
                 method=method, secure=secure, mode=mode)
 
     def open(self, *args, **kwargs):
-        return self.build_request(*args, **kwargs)()
+        return self.create_request(*args, **kwargs)()
 
     def get(self, *args, **kwargs):
         kwargs['method'] = 'GET'
@@ -690,10 +693,14 @@ class Stream(Connection):
 
 
 # namespace api
-open = lambda url, **kwargs: Request(url=url, **kwargs)()
+def create_request(url, **kwargs):
+    return Request(url=url, **kwargs)
 
-for method in METHODS:
-    globals()[method.lower()] = functools.partial(open, method=method)
+def implement_methods(creator, globs):
+    globs['open'] = lambda url, **kwargs: Request(url=url, **kwargs)()
+
+    for method in METHODS:
+        globs[method.lower()] = functools.partial(globs['open'], method=method)
 
 if __name__ == "__main__":
     import doctest

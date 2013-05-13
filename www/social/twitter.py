@@ -3,26 +3,30 @@ from www.auth import oauth
 from www.utils import default_kwargs
 
 
+#TODO Streams!
+
 class Consumer(oauth.Consumer):
     Provider = None
 
 class Token(oauth.Token): pass
 
-class Provider(www.Connection):
-    host = 'api.twitter.com'
-    request_token_path = '/oauth/request_token'
-    access_token_path = '/oauth/access_token'
-    authenticate_uri = 'http://twitter.com/oauth/authenticate'
-    authorize_uri = 'http://twitter.com/oauth/authorize'
+class Authority(oauth.Authority):
+    class Connection(oauth.Authority.Connection):
+        host = 'api.twitter.com'
+        request_token_path = '/oauth/request_token'
+        access_token_path = '/oauth/access_token'
+        authenticate_uri = 'http://twitter.com/oauth/authenticate'
+        authorize_uri = 'http://twitter.com/oauth/authorize'
 
 
 class Error(Exception): pass
 
-class API(www.Connection):
-    host = 'api.twitter.com'
-    secure = True
+class API(oauth.Service):
+    class Connection(oauth.Service.Connection):
+        host = 'api.twitter.com'
+        secure = True
 
-    format = 'json'
+        format = 'json'
 
     @default_kwargs(
             include_my_retweet='true',
