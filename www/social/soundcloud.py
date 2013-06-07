@@ -28,11 +28,14 @@ class Authority(oauth2.Authority)
         secure = True
         host = 'api.soundcloud.com'
 
-    #XXX: This could be accomplishable by a 'format' attribute
-    #format = 'json'
-    def exchange_code(self, code, redirect_uri, grant_type):
-        return super(Authority, self).exchange_code(code, redirect_uri,
+    def exchange_code(self, code, redirect_uri, grant_type='authorization_code'):
+        creds = super().exchange_code(code, redirect_url,
                 grant_type=grant_type).json
+
+        if 'error' in creds:
+            #TODO proper error class
+            raise Exception(creds['error'])
+        return creds
 
 class API(oauth2.Service):
     class Connection(oauth2.Service.Connection):

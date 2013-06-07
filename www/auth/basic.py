@@ -41,11 +41,6 @@ class Service(www.auth.Service):
     pass
 
 
-class Authority(Service):
-    def get_redirect_url(self, callback_url):
-        return callback_url
-
-
 class Consumer(www.auth.Consumer): pass
 
 class Token(www.auth.Token):

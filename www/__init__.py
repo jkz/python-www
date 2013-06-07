@@ -18,8 +18,18 @@ Contents:
     Listener
 """
 
-import urllib.parse
-import http.client
+# This module combines urllib/urlparse into one universal api
+try:
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit, quote
+except ImportError:
+    from urllib import urlencode, quote
+    from urlparse import parse_qsl, urlsplit, urlunsplit
+
+try:
+    from http import client as http
+except ImportError:
+    import httplib as http
+
 import collections
 
 import json
@@ -33,17 +43,25 @@ NAME = 'www'
 VERSION = '0.0.1'
 USER_AGENT = '{}/{}'.format(NAME, VERSION)
 
-METHODS = 'GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH', 'OPTIONS'
+class methods:
+    NONE = set()
+    ALL = set(['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'PATCH', 'OPTIONS'])
+    IDEMPOTENT = ALL - set(['POST', 'PATCH'])
+    SAFE = IDEMPOTENT - set(['PUT', 'DELETE'])
+    DANGEROUS = ALL - SAFE
+    FORM = set(['GET', 'POST'])
+    CRUD = set(['GET', 'POST', 'PUT', 'DELETE'])
+    DATA = set(['PUT', 'POST', 'PATCH'])
 
 class Error(Exception): pass
-class HTTPException(Error, http.client.HTTPException): pass
+class HTTPException(Error, http.HTTPException): pass
 
 # This creates an exception class for each http response status.
 # The responses dict has their codes as keys, the global namespace has
-# their constant names from http.client camelcased.
+# their constant names from http camelcased.
 # e.g. NOT_FOUND becomes NotFound
 responses = {}
-for code, name in http.client.responses.items():
+for code, name in http.responses.items():
     name = name.replace(' ', '')
     class Status(HTTPException):
         code = code
@@ -70,7 +88,7 @@ class Query(str):
         if verbatim:
             return '&'.join(('='.join(map(str, p)) for p in pairs))
         else:
-            return urllib.parse.urlencode(pairs)
+            return urlencode(pairs)
 
 
 class Resource:
@@ -87,7 +105,7 @@ class Resource:
     #XXX: A normalize method would be nice
     #TODO: encoding check
     def __init__(self,
-            url='',
+            url=None,
             connection=None,
             scheme=None,
             host=None,
@@ -105,8 +123,10 @@ class Resource:
         # Determines whether parameters are combined encoded or verbatim
         self.verbatim = verbatim
 
+        url = url or ''
+
         # Split the url into scheme, port, host, query and path
-        _scheme, _netloc, self.path, _query_string, self.fragment = urllib.parse.urlsplit(url)
+        _scheme, _netloc, self.path, _query_string, self.fragment = urlsplit(url)
 
         # Set the connection on self to extract parameters and enable requests.
         if connection:
@@ -139,9 +159,9 @@ class Resource:
         # Create the query dictionary and add kwargs to it
         self.query = {}
         if _query_string is not None:
-            self.query.update(dict(urllib.parse.parse_qsl(_query_string)))
+            self.query.update(dict(parse_qsl(_query_string)))
         if query_string is not None:
-            self.query.update(dict(urllib.parse.parse_qsl(query_string)))
+            self.query.update(dict(parse_qsl(query_string)))
         if query is not None:
             self.query.update(query)
         self.query.update(kwargs)
@@ -173,7 +193,7 @@ class Resource:
 
     @property
     def authority(self):
-        return urllib.parse.urlunsplit(self.host_parts, + ('', '', ''))
+        return urlunsplit(self.host_parts, + ('', '', ''))
 
 
     @property
@@ -181,11 +201,11 @@ class Resource:
         """
         Return the url string without scheme and netloc parts
         """
-        return urllib.parse.urlunsplit(('', '') + self.absolute_path_parts)
+        return urlunsplit(('', '') + self.absolute_path_parts)
 
     @property
     def url(self):
-        return urllib.parse.urlunsplit(self.parts)
+        return urlunsplit(self.parts)
 
     def stream(self, method='GET', body=None, headers=None, **kwargs):
         return Request(resource=self, method=method, body=body).stream(**kwargs)
@@ -325,8 +345,8 @@ class Connection:
     @property
     def netloc(self):
         if (self.port is not None
-        and not (self.port == http.client.HTTP_PORT and self.scheme == 'http')
-        and not (self.port == http.client.HTTPS_PORT and self.scheme == 'https')):
+        and not (self.port == http.HTTP_PORT and self.scheme == 'http')
+        and not (self.port == http.HTTPS_PORT and self.scheme == 'https')):
             host = ':'.join((self.host, str(self.port)))
         else:
             host = self.host
@@ -357,9 +377,9 @@ class Connection:
 
         # Specify the connection type
         if self.secure:
-            connector = http.client.HTTPSConnection
+            connector = http.HTTPSConnection
         else:
-            connector = http.client.HTTPConnection
+            connector = http.HTTPConnection
 
         # Prepare parameters
         params = {}
@@ -441,8 +461,14 @@ class Connection:
     def open(self, *args, **kwargs):
         return self.create_request(*args, **kwargs)()
 
-    def get(self, *args, **kwargs):
+    #TODO: add this api more nicely
+    #TODO: choose upper or lower
+    def GET(self, *args, **kwargs):
         kwargs['method'] = 'GET'
+        return self.open(*args, **kwargs)
+
+    def POST(self, *args, **kwargs):
+        kwargs['method'] = 'POST'
         return self.open(*args, **kwargs)
 
 # Add get, post, ... api to Connection class
@@ -530,7 +556,7 @@ class Response:
 
     @property
     def query(self):
-        return dict(urllib.urlparse.parse_qsl(self.raw))
+        return dict(parse_qsl(self.raw))
 
     @property
     def content(self):
@@ -576,17 +602,19 @@ class Stream(Connection):
 
     class Error(Error): pass
 
-    def __init__(self, host=None, auth=None, listener=None, **options):
+    def __init__(self, host=None, listener=None, **options):
         if host:
             self.host = host
         self.listener = listener or Listener()
-        self.auth = auth
 
         OPTIONS = ("timeout", "retry_count", "retry_time",
                    "snooze_time", "buffer_size", "secure",)
 
         for key in OPTIONS:
-            setattr(self, key, options.get(key, getattr(self, key)))
+            setattr(self, key, options.pop(key, getattr(self, key)))
+
+        for key, val in options.items():
+            setattr(self, key, val)
 
     def retry_time(self, error_count):
         return 10.0
@@ -658,10 +686,10 @@ class Stream(Connection):
         self._cache('mode', 'stream')
         return self
 
-    def start(self, callm=None, async=False):
-        """Open a stream with a callm request."""
-        if callm:
-            self.endpoint = callm
+    def start(self, endpoint=None, async=False):
+        """Open a stream with a request object"""
+        if endpoint:
+            self.endpoint = endpoint
         if self.running is True:
             raise self.Error('Stream running already!')
         self.running = True
@@ -672,7 +700,7 @@ class Stream(Connection):
             self._run()
 
     def stop(self):
-        """Close the running stream on this Creek."""
+        """Close the running stream"""
         self.running = False
 
     def on_closed(self, response):
@@ -692,15 +720,22 @@ class Stream(Connection):
         return data
 
 
-# namespace api
+# Namespace api
+def implement_methods(function, namespace):
+    """
+    Adds `open` and lowercased versions of each method to the namespace,
+    to invoke request objects created by given function.
+    """
+    namespace['open'] = lambda url, **kwargs: function(url=url, **kwargs)()
+
+    for method in methods.ALL:
+        namespace[method.lower()] = functools.partial(namespace['open'], method=method)
+
+
 def create_request(url, **kwargs):
     return Request(url=url, **kwargs)
 
-def implement_methods(creator, globs):
-    globs['open'] = lambda url, **kwargs: Request(url=url, **kwargs)()
-
-    for method in METHODS:
-        globs[method.lower()] = functools.partial(globs['open'], method=method)
+implement_methods(create_request, globals())
 
 if __name__ == "__main__":
     import doctest

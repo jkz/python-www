@@ -3,7 +3,6 @@ import random
 import hmac
 import hashlib
 import base64
-import urllib.parse
 
 import www
 import www.auth
@@ -12,10 +11,10 @@ class Error(www.auth.Error):
     pass
 
 def percent_encode(s):
-    return urllib.parse.quote(str(s).encode('utf-8'), '~')
+    return www.quote(str(s).encode('utf-8'), '~')
 
 def percent_encode_dict(d):
-    return {percent_encode(key) : percent_encode(val) for key, val in d.items()}
+    return dict((percent_encode(v), percent_encode(v)) for k, v in d.items())
 
 def normalize_url(url):
     resource = www.Resource(url)
@@ -111,24 +110,28 @@ class Auth(www.auth.Auth):
         params.update(request.data)
 
         request.headers['Authorization'] = self.header(request.method,
-                request.resource.absolute_path, **params)
+                request.resource.url, **params)
 
+
+class Service(www.auth.Service):
+    class Connection(www.Connection):
+        pass
 
 #TODO: detailed error messages
 #TODO: GET or POST?
-class Authority(www.auth.Service):
+class Authority(Service):
     """
     Represents an authentication service.
 
     The constructor requires at least a `host` and an `auth` object
     """
-    REQUEST_TOKEN_PATH = None
-    ACCESS_TOKEN_PATH = None
+    REQUEST_TOKEN_PATH = NotImplemented
+    ACCESS_TOKEN_PATH = NotImplemented
 
-    AUTHENTICATE_URL = None
+    AUTHENTICATE_URL = NotImplemented
 
     def get_request_token(self):
-        response = self.POST(self.REQUEST_TOKEN_PATH)
+        response = self.connection.POST(self.REQUEST_TOKEN_PATH)
         if response.status != 200:
             raise Error('Invalid response while obtaining request token.')
         return response.query
@@ -136,7 +139,7 @@ class Authority(www.auth.Service):
     def get_access_token(self, key, secret, verifier):
         self.auth.set_token(key, secret)
         self.auth.set_verifier(verifier)
-        response = self.POST(self.ACCESS_TOKEN_PATH)
+        response = self.connection.POST(self.ACCESS_TOKEN_PATH)
         if response.status != 200:
             raise Error('Invalid response while obtaining access token.')
         return response.query

@@ -13,8 +13,7 @@ class Consumer(auth.Consumer):
 
 
 class Token(auth.Token):
-    def __init__(self, consumer, key):
-        self.consumer = consumer
+    def __init__(self, key):
         self.key = key
 
 class Auth(auth.Auth):
@@ -32,7 +31,9 @@ class Auth(auth.Auth):
         Does not support duplicate keys.
         """
         if self.token is not None:
-            request.resource.query['client_id'] = self.token.key
+            request.resource.query['access_token'] = self.token.key
+        else:
+            request.resource.query['client_id'] = self.consumer.key
 
 
 class Authority(auth.Service):
@@ -42,7 +43,10 @@ class Authority(auth.Service):
 
     def request_code(self, redirect_uri, **kwargs):
         """Return a redirect url"""
-        query = dict(client_id=self.auth.consumer.key, redirect_uri=redirect_uri)
+        query = {
+                'client_id': self.auth.consumer.key,
+                'redirect_uri': redirect_uri,
+        }
         query.update(kwargs)
         return www.URL(self.AUTHENTICATE_URL, verbatim=False, **query)
 
@@ -63,3 +67,16 @@ class Authority(auth.Service):
             raise Error('Error occured while exchanging code')
         return response
 
+def create_request(url, client_id, client_secret, access_token=None, **kwargs):
+    consumer = Consumer(client_id, client_secret)
+    if access_token:
+        token = Token(key=access_token)
+    else:
+        token = None
+
+    request = www.Request(url, **kwargs)
+    auth = consumer.Authority.Auth(consumer=consumer, token=token)
+    request.processors.append(auth)
+    return request
+
+www.implement_methods(create_request, globals())

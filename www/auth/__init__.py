@@ -2,7 +2,7 @@ import sys
 
 import www
 
-class InterfaceClassAttribute:
+class InterfaceClassAttribute(object):
     """
     This funny construct allows interface parts to be defined in
     a module and recognized by the class. It will automagically
@@ -36,7 +36,7 @@ class InterfaceClassAttribute:
 class Error(www.Error):
     pass
 
-class Auth:
+class Auth(object):
     """
     Authorizes requests with given credentials
     """
@@ -48,7 +48,7 @@ class Auth:
     def __call__(self, request):
         pass
 
-class Service:
+class Service(object):
     # A class that authorizes requests by signing their parameters
     Auth = InterfaceClassAttribute('Auth')
 
@@ -62,13 +62,13 @@ class Service:
         try:
             self.connection = kwargs['connection']
         except KeyError:
-            self.conneciton = self.Connection()
+            self.connection = self.Connection()
         self.auth = self.Auth(**kwargs)
 
         self.connection.processors.append(self.auth)
 
 
-class Consumer:
+class Consumer(object):
     """
     Represents an authenticating entity.
     """
@@ -78,15 +78,6 @@ class Consumer:
     # A class that executes authenticated calls
     API = InterfaceClassAttribute('API')
 
-    def get_user(self, **creds):
-        """Return a user object for given credentials (or None)"""
-        return NotImplementedError
-
-    def get_token(self, uid):
-        """Return a token object for given user id (or None)"""
-        return NotImplementedError
-
-
     @property
     def authority(self):
         return self.Authority(consumer=self)
@@ -95,7 +86,7 @@ class Consumer:
         return self.API(consumer=self, **kwargs)
 
 
-class Token:
+class Token(object):
     """
     Represents a user authorization for a consumer
     """
@@ -105,6 +96,6 @@ class Token:
     def consumer(self):
         return self.Consumer()
 
-    def api(self):
-        return self.consumer.API(token=self)
+    def api(self, **kwargs):
+        return self.consumer.API(token=self, **kwargs)
 

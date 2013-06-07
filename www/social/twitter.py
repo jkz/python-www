@@ -1,3 +1,4 @@
+import functools
 import www
 from www.auth import oauth
 from www.utils import default_kwargs
@@ -11,12 +12,13 @@ class Consumer(oauth.Consumer):
 class Token(oauth.Token): pass
 
 class Authority(oauth.Authority):
-    class Connection(oauth.Authority.Connection):
+    AUTHENTICATE_URL = 'http://twitter.com/oauth/authenticate'
+
+    REQUEST_TOKEN_PATH = '/oauth/request_token'
+    ACCESS_TOKEN_PATH = '/oauth/access_token'
+
+    class Connection(www.Connection):
         host = 'api.twitter.com'
-        request_token_path = '/oauth/request_token'
-        access_token_path = '/oauth/access_token'
-        authenticate_uri = 'http://twitter.com/oauth/authenticate'
-        authorize_uri = 'http://twitter.com/oauth/authorize'
 
 
 class Error(Exception): pass

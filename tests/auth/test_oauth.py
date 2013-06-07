@@ -1,5 +1,4 @@
 import unittest
-import urllib
 
 import www
 from www.auth import oauth
@@ -34,7 +33,7 @@ class TestAuth(unittest.TestCase):
         combo_dict.update(params_dict)
         combo_dict.update(header_dict)
         sorted_dict = sorted(combo_dict.items())
-        params_string = urllib.parse.urlencode(sorted_dict)
+        params_string = www.urlencode(sorted_dict)
         computed_param_string = params_string.replace('+', '%20').replace('%7E', '~')
 
         expected_param_string = "oauth_consumer_key=xnr8wCo3LynwHN5G4EpPgvEnLsQsFh17QuT2rNpUrnl0JdwjZO&oauth_nonce=17616581727913238353&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1353470277&oauth_token=lTdTm5rKIhRKwlqtjoFgiDxuEgDefr1BYaLNXqfGwpn6Ro2FCC&oauth_verifier=aOPAHwBJBUqjPUP3LT9JzJ08ywleE2xLTk1FgOwrh9rEUlj80f&oauth_version=1.0"
@@ -78,7 +77,7 @@ class TestAuth(unittest.TestCase):
         combo_dict.update(params_dict)
         combo_dict.update(header_dict)
         sorted_dict = sorted(combo_dict.items())
-        computed_param_string = urllib.parse.urlencode(sorted_dict)
+        computed_param_string = www.urlencode(sorted_dict)
         computed_param_string = computed_param_string.replace('+', '%20')
 
         expected_param_string = "include_entities=true&oauth_consumer_key=xvz1evFS4wEEPTGEFPHBog&oauth_nonce=kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg&oauth_signature_method=HMAC-SHA1&oauth_timestamp=1318622958&oauth_token=370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb&oauth_version=1.0&status=Hello%20Ladies%20%2B%20Gentlemen%2C%20a%20signed%20OAuth%20request%21"
