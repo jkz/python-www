@@ -1,6 +1,6 @@
 from www.auth import oauth2
 
-class Error(Error): pass
+class Error(Exception): pass
 class ParseError(Error): pass
 
 class Consumer(oauth2.Consumer): pass

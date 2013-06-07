@@ -36,7 +36,10 @@ class Auth(auth.Auth):
             request.resource.query['client_id'] = self.consumer.key
 
 
-class Authority(auth.Service):
+class Service(auth.service):
+    pass
+
+class Authority(Service):
     AUTHENTICATE_URL = NotImplemented
 
     EXCHANGE_CODE_PATH = NotImplemented
