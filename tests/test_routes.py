@@ -2,20 +2,16 @@ import unittest
 
 from www.server.routes import Route, Int, Ints
 
-class TestResource(unittest.TestCase):
+class TestRoute(unittest.TestCase):
     def test_basic(self):
         api = Route('/api', 'Api',
             users = Route('/users', 'User.All',
                 one = Route('/{uid}', 'User.One', uid=Int(),
-                    posts = Route('/posts', 'UserPosts.All')
-                ),
-                few = Route('/{uids}', 'User.Few', uids=Ints())
-            ),
+                    posts = Route('/posts', 'UserPosts.All')),
+                few = Route('/{uids}', 'User.Few', uids=Ints())),
             posts = Route('/posts', 'Post.All',
                 one = Route('/{uid}', 'Post.One', uid=Int()),
-                few = Route('/{uids}', 'User.Few', uids=Ints()),
-            )
-        )
+                few = Route('/{uids}', 'User.Few', uids=Ints()),))
 
         self.assertEqual(api.reverse(),
                          '/api')
@@ -35,3 +31,16 @@ class TestResource(unittest.TestCase):
                         ('User.All', {}))
         self.assertEqual(api.resolve('/api/users/123'),
                         ('User.One', {'uid': 123}))
+
+    def test_order(self):
+        #XXX Predictable unwanted behaviour. Meh.
+        right = Route('',
+                true = Route('/same', True),
+                false = Route('/same', False))
+
+        wrong = Route('',
+                true = Route('/same', True),
+                false = right.false)
+
+        self.assertEqual(right.resolve('/same'), (True, {}))
+        self.assertEqual(wrong.resolve('/same'), (False, {}))

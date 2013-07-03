@@ -1,3 +1,14 @@
+#XXX Feature requests:
+# Route.append(route)
+"""
+This module enables you to configure a routing scheme, to map urls to
+endpoints and extract keyword arguments from those urls.
+
+The mapping scheme is a bijection:
+    resolve maps url to endpoint + kwargs
+    reverse maps names + kwargs to urls
+"""
+
 import www
 import re
 
@@ -65,61 +76,12 @@ class Ints(Parts):
 
 
 class Route:
-    """
-    Use like this.
-
-    Doesnt look all too sexy in comments :/
-
-    api = Route('/api', Api.Index,
-        users = Route('/users', User.All,
-            one = Route('/{uid}', User.One, uid=Int(),
-                posts = Route('/posts', UserPosts.All),
-            few = Route('/{uids}', User.Few, uids=Ints()),
-        posts = Route('/posts', Post.All),
-            one = Route('/{uid}', Post.One, uid=Int()),
-            few = Route('/{uids}', User.Few, uids=Ints()),
-
-    Also allows:
-    api = Route('/api', Api.Index,
-        users       = Route('/users', User.All)
-        user        = Route('/users/(?P<uid>[^/]+)', User.One)
-        user_posts  = Route('/users/(?P<uid>[^/]+)/posts', UserPosts.All),
-    )
-    """
     _last_serial = 0
 
     def __init__(self, pattern, endpoint=None, **kwargs):
-        self._serial = self._last_serial = self._last_serial + 1
+        self._serial = Route._last_serial = self._last_serial + 1
         self.pattern = pattern
         self.endpoint = endpoint
-
-        # There are 4 special cases in `parts` that map to classes
-        # - str
-        # - int
-        # - [str]
-        # - [int]
-        # There are some more to be implemented
-        # - 'pattern',
-        # - convertor,
-        # - ['pattern'],
-        # - [convertor],
-        # - ['pattern', convertor]
-        # - ['pattern', convertor, 'sep']
-        # - ['pattern', 'sep']
-        # - [convertor, 'sep']
-        '''
-        for key, val in parts.items():
-            if val == str:
-                self._parts[key] = Str()
-            elif val == int:
-                self._parts[key] = Int()
-            elif val == [str]:
-                self._parts[key] = Strs()
-            elif val == [int]:
-                self._parts[key] = Ints()
-            else:
-                self._parts[key] = val
-        '''
         self._routes = []
         self._parts = {}
         for key, val in kwargs.items():
@@ -129,6 +91,8 @@ class Route:
             else:
                 self._parts[key] = val
         self._routes = sorted(self._routes, key=lambda x: x._serial)
+        for i,  r in enumerate(self._routes):
+            print(i, r._serial, r.endpoint)
         self._compiled = re.compile(str(self))
 
     def reverse(self, name='', **kwargs):
