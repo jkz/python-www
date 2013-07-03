@@ -69,6 +69,7 @@ for code, name in http.responses.items():
     globals()[name] = responses[code] = Status
 
 
+#XXX this should be a function -.-
 class Query(str):
     """
     A querystring builder class.
@@ -220,11 +221,13 @@ class Resource:
         return self.url
 
 
+#XXX this should be a function -.-
 class URL(str):
     def __new__(self, *args, **kwargs):
         return str.__new__(self, Resource(*args, **kwargs).url)
 
 
+#XXX this should be a function -.-
 class AbsolutePath(str):
     def __new__(self, *args, **kwargs):
         return str.__new__(self, Resource(*args, **kwargs).absolute_path)
