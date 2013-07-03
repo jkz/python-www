@@ -91,8 +91,6 @@ class Route:
             else:
                 self._parts[key] = val
         self._routes = sorted(self._routes, key=lambda x: x._serial)
-        for i,  r in enumerate(self._routes):
-            print(i, r._serial, r.endpoint)
         self._compiled = re.compile(str(self))
 
     def reverse(self, name='', **kwargs):
@@ -151,6 +149,10 @@ class Route:
                 endpoint, _kwargs = deeper
                 kwargs.update(_kwargs)
                 return endpoint, kwargs
+
+        # Did not match the entire string and did not match a nested route
+        if rest:
+            return None
 
         # Return the endpoint and the matched, processed kwargs
         return self.endpoint, kwargs

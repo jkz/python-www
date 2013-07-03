@@ -10,18 +10,21 @@ class TestRoute(unittest.TestCase):
                     posts = Route('/posts', 'UserPosts.All')),
                 few = Route('/{uids}', 'User.Few', uids=Ints())),
             posts = Route('/posts', 'Post.All',
+                few = Route('/{uids}', 'User.Few', uids=Ints()),
                 one = Route('/{uid}', 'Post.One', uid=Int()),
-                few = Route('/{uids}', 'User.Few', uids=Ints()),))
+            ))
 
         self.assertEqual(api.reverse(),
                          '/api')
         self.assertEqual(api.reverse('users'),
                          '/api/users')
-        self.assertEqual(api.reverse('users.one', uid='123'),
+        self.assertEqual(api.reverse('users.one', uid=123),
                          '/api/users/123')
-        self.assertEqual(api.reverse('users.one.posts', uid='123'),
+        self.assertEqual(api.reverse('users.one.posts', uid=123),
                          '/api/users/123/posts')
-        self.assertEqual(api.reverse('users', uid='123'),
+        self.assertEqual(api.reverse('users.few', uids=(123, 456)),
+                         '/api/users/123;456')
+        self.assertEqual(api.reverse('users', uid=123),
                          '/api?uid=123')
 
 
@@ -31,6 +34,8 @@ class TestRoute(unittest.TestCase):
                         ('User.All', {}))
         self.assertEqual(api.resolve('/api/users/123'),
                         ('User.One', {'uid': 123}))
+        self.assertEqual(api.resolve('/api/users/123;456'),
+                        ('User.Few', {'uids': (123, 456)}))
 
     def test_order(self):
         #XXX Predictable unwanted behaviour. Meh.
