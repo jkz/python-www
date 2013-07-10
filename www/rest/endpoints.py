@@ -1,11 +1,20 @@
 from www.server.routes import Route
 from www.server.endpoints import Endpoint
 
+from .schema import Schema
+from .options import Options, Option
+
+
+class Endpoint(Endpoint):
+    def envelope(self, status, meta):
+        return lambda body: {'code': status, 'meta': meta, 'data': body}
+
+
 class One(Endpoint):
     methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
 
-    options = dict(
-        identifier = o.Option(
+    options = Options(
+        identifier = Option(
             as_kwarg = 'uid',
             help_text = "A unique identifier without a slash",
         ),
@@ -31,8 +40,8 @@ class One(Endpoint):
 class Few(Endpoint):
     methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
 
-    options = dict(
-        identifier = o.Option(
+    options = Options(
+        identifier = Option(
             as_kwarg = 'uids',
             help_text = "A list of identifiers without a slash",
         ),

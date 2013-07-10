@@ -1,6 +1,8 @@
 """
 Resource defines data and provides the means to manipulate and represent it.
 
+Resources don't know request objects, unless passed as an option!
+
 A resource can have multiple schemas which define the representations.
 A resource presents an interface which endpoints use:
     fetch(uid)
@@ -12,6 +14,8 @@ A resource presents an interface which endpoints use:
     bulk_delete() / drop()
     bulk_update(patch) / batch(patch)
 """
+
+from . import schema as s
 
 class Resource:
     def identify(self, representation):

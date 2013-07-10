@@ -1,6 +1,10 @@
+import copy
+
 from . import exceptions
+from .validators import Validators
 
 def get_ip(request):
+    """Extract the caller's IP"""
     x_forwarded_for = request.headers.get('X-Forwarded-For')
     if x_forwarded_for:
         ip = x_forwarded_for.split(',')[0]
@@ -12,6 +16,9 @@ class Option:
     """
     The Option class extracts options from a request object.
     """
+    empty = (None, (), [], {})
+    validators = Validators()
+
     def __init__(self, **conf):
         """
             as_query    # query parameter option key
@@ -23,11 +30,15 @@ class Option:
             default
             choices     # the valid values for this option
             help_text   # description for client side
-            converter   # function that takes a value and returns one
+            convert     # function that takes a value and returns one
             methods     # http methods supporting the option
             requires    # function takes a request and returns permission flag
+            validators  # functions that takes the value and raises exceptions
         """
-        self.conf = conf
+        validators = conf.pop('validators')
+        if validators:
+            self.validators += validators
+        self.__dict__.update(conf)
 
     containers = {
         'as_query':  lambda r: r.query,
@@ -85,8 +96,66 @@ class Option:
 
         val = self.find(request)
 
-        if 'converter' in self.conf:
-            return self.conf['converter'](val)
+        if 'convert' in self.conf:
+            return self.conf['convert'](val)
 
         return val
+
+
+class Integer(Option):
+    min = None
+    max = None
+
+    empty = (None, 'none')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.validators += (
+            validators.Min(self.min),
+            validators.Max(self.max),
+        )
+
+    def convert(self, value):
+        if value in self.empty:
+            return None
+        return int(value)
+
+class Options(dict):
+    """A dictionary of callables that extract arguments from objects"""
+
+    def __add__(self, other):
+        """
+        Create a deepcopy of self and update it with a deepcopy of the other.
+        """
+        #XXX maybe a more procedural approach is preferred here
+        if not isinstance(other, Options):
+            raise TypeError
+        new = copy.deepcopy(self)
+        new.update(copy.deepcopy(other))
+        return new
+
+    def __radd__(self, other):
+        return self + other
+
+    def parse(self, object):
+        """
+        Return an iterator containing all name, value pairs for configured
+        options.
+        """
+        for name, option in self.options:
+            try:
+                yield name = option(object)
+            except exceptions.Missing:
+                raise
+            except exceptions.Omitted:
+                continue
+
+    def meta(self):
+        meta = {}
+        for name, option in self.items():
+            try:
+                meta[name] = option.meta()
+            except attributeError:
+                meta[name] = option.__doc__
+        return meta
 
