@@ -1,3 +1,4 @@
+from . import exceptions
 
 def get_ip(request):
     x_forwarded_for = request.headers.get('X-Forwarded-For')
@@ -7,11 +8,10 @@ def get_ip(request):
         ip = request.meta.get('REMOTE_ADDR')
     return ip
 
-#TODO inherit from proper exception
-class Missing(Exception):
-    pass
-
 class Option:
+    """
+    The Option class extracts options from a request object.
+    """
     def __init__(self, **conf):
         """
             as_query    # query parameter option key
@@ -28,6 +28,13 @@ class Option:
             requires    # function takes a request and returns permission flag
         """
         self.conf = conf
+
+    containers = {
+        'as_query':  lambda r: r.query,
+        'as_kwarg':  lambda r: r.kwargs,
+        'as_header': lambda r: r.headers,
+        'as_meta':   lambda r: r.meta,
+    }
 
     def find(self, request):
         if 'as_query' in self.conf:
@@ -63,7 +70,7 @@ class Option:
         if 'default' in self.conf:
             return self.conf['default']
 
-        raise Missing
+        raise exceptions.Missing
 
 
     def meta(self):

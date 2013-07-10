@@ -1,5 +1,11 @@
 #XXX Feature requests:
-# Route.append(route)
+# - Route.append(route)
+# - Part shortcuts like /:slug/#uid or /<str:slug>/<int:uid>
+# - Part shortcut tuples:
+#       int
+#       str
+#       (int, '[0-9]+')
+#       (str, '[^/]+')
 """
 This module enables you to configure a routing scheme, to map urls to
 endpoints and extract keyword arguments from those urls.
@@ -76,6 +82,10 @@ class Ints(Parts):
 
 
 class Route:
+    # Serial number to retain pattern order in kwarg declaration,
+    # which would otherwise be undefined.
+    #XXX Behaviour when a predeclared route is assigned to a
+    #    router later, it might be unintendedly first
     _last_serial = 0
 
     def __init__(self, pattern, endpoint=None, **kwargs):
@@ -84,12 +94,17 @@ class Route:
         self.endpoint = endpoint
         self._routes = []
         self._parts = {}
+
         for key, val in kwargs.items():
+            # Add nested routes
             if isinstance(val, Route):
                 self._routes.append(val)
                 setattr(self, key, val)
+            # Add url parts
             else:
                 self._parts[key] = val
+
+        # Sort the routes by serial
         self._routes = sorted(self._routes, key=lambda x: x._serial)
         self._compiled = re.compile(str(self))
 
@@ -99,14 +114,14 @@ class Route:
 
         route.reverse('foo.bar', **kwargs)
 
-        Builds an url by recursively replacing kwargs and accessing appending
-        resolved nested route.
+        Build an url by recursively replacing kwargs and appending
+        reversed nested routes.
         """
         # Prepare the arguments for the path
-        fargs = {key: part.reverse(kwargs.pop(key))
+        format_args = {key: part.reverse(kwargs.pop(key))
                 for key, part in self._parts.items()}
         # Format the path pattern
-        path = self.pattern.format(**fargs)
+        path = self.pattern.format(**format_args)
 
         # Append nested route paths
         if name:
@@ -140,18 +155,18 @@ class Route:
                 kwargs[key] = val
 
         # Subtract the matched part from the path
-        rest = path[match.end():]
+        unmatched = path[match.end():]
 
         # Look for a deeper match and return it if found
         for route in self._routes:
-            deeper = route.resolve(rest)
+            deeper = route.resolve(unmatched)
             if deeper:
                 endpoint, _kwargs = deeper
                 kwargs.update(_kwargs)
                 return endpoint, kwargs
 
         # Did not match the entire string and did not match a nested route
-        if rest:
+        if unmatched:
             return None
 
         # Return the endpoint and the matched, processed kwargs

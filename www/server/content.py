@@ -44,21 +44,32 @@ class Negotiate(layers.Layer):
     content_types = 'json', 'form', 'text'
     languages = 'en', 'nl'
 
-    @property
+    @propperty
     def options(self):
-        return {
-            'accept_type': [
-                ('kwargs', 'ext'),
-                ('query', 'format'),
-                ('headers', 'Accept', self.accept_header),
-                self.accept_types[0]
+        return layers.options(
+            accept_type = o.Option(
+                as_kwarg  = 'ext',
+                as_query  = 'format',
+                as_header = ('Accept', self.accept_header),
+                default   = self.accept_types[0],
+                help_text = "The response data format",
             ],
-            'content_type': [
-                ('query', 'content_type'),
-                ('headers', 'Content-Type', self.content_type_header),
-                self.content_types[0]
+            content_type: [
+                as_query  = 'content_type',
+                as_header = ('Content-Type', self.content_type_header),
+                default   = self.content_types[0],
+                help_text = "The request data format",
             ],
+            language = [
+                as_kwarg  = 'lang',
+                as_query  = 'lang',
+                as_header = 'Accept-Language',
+                default   = self.languages[0],
+                help_text = "The repsonse data language",
+            ]
         }
+
+
 
     def accept_header(self, header):
         match = mimeparse.best_match(mime_list(self.accept_types), header)
@@ -111,18 +122,21 @@ class Serialize(layers.Layer):
         raise exceptions.NotAcceptable("NO XML")
 
     @layers.options(
-        pretty = [
-            ('query', 'pretty', lambda x: x == 'true'),
-            False
-        ],
-        indent = [
-            ('query', 'indent', int),
-            4
-        ],
-        sort_keys = [
-            ('query', 'sort_keys', lambda x: x == 'true'),
-            True
-        ],
+        pretty = o.Option(
+            as_query  = ('pretty', lambda x: x == 'true'),
+            default   = False,
+            help_text = "When 'true' the json is formatted nicely.",
+        ),
+        indent = o.Option(
+            as_query  = ('indent', int),
+            default   = 4,
+            help_text = "Number of indentation spaces for pretty json.",
+        ),
+        sort_keys = o.Option(
+            as_query  = ('sort_keys', lambda x: x == 'true'),
+            default   = True,
+            help_text = "When 'true' the keys are sorted"
+        ),
     )
     def json(self, request, data):
         params = {}
@@ -132,9 +146,10 @@ class Serialize(layers.Layer):
         return _json.dumps(data, **params)
 
     @layers.options(
-        jsonp = [
-            ('query', 'callback'),
-        ]
+        json_p = o.Option(
+            as_query  = 'callback',
+            help_text = "The local callback function that wraps the response"
+        ),
     )
     def jsonp(self, request, data):
         if not request['jsonp']:
