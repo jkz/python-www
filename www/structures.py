@@ -210,7 +210,6 @@ class Option(dict):
         # Convert dictionary to a list of pairs
         # Boobs! The order is undefined, so using callables in dict options is
         # discouraged.
-
         if hasattr(pairs, 'items'):
             for key, options in pairs.items():
                 self.set(key, *options)

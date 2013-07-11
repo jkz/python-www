@@ -98,9 +98,8 @@ class Tuple(tuple):
 
     def convert(self, data):
         input = []
-        for value, field in zip(data, self.writables()):
-            alias = field.alias if field.alias is not None else name
-            value = self.extract_input(data, alias)
+        for data, field in zip(data, self.writables()):
+            value = self.extract_input(data)
             try:
                 input.append(field.parse(value))
             except exceptions.Omitted:
@@ -109,9 +108,8 @@ class Tuple(tuple):
 
     def revert(self, data):
         output = []
-        for name, field in self.readables():
-            alias = field.alias if field.alias is not None else name
-            value = self.extract_output(data, alias)
+        for data, field in zip(data, self.readables()):
+            value = self.extract_output(data)
             try:
                 output.append(field.output(value))
             except exceptions.Omitted:

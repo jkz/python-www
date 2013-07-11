@@ -1,37 +1,45 @@
 import www
 
+from www.core import options
+from www.core import fields
+
 from . import structures
-from . import responses
 
-from . import options
-
-class Limit(options.Integer):
+class Limit(options.Option):
     "The maximum collection size returned"
-    as_query = 'limit'
-    min = 1
-    max = None
-    default = 20
+    as_query = 'limit',
+    field = fields.Integer(
+        min = 1
+        max = None
+        default = 20
+    )
 
-class Offset(options.Integer):
+class Offset(options.Option):
     "The maximum collection size returned"
-    as_query = 'offset'
-    min = 0
-    max = None
-    default = min
+    as_query = 'offset',
+    field = fields.Integer(
+        min = 0
+        max = None
+        default = min
+    )
 
-class Page(options.Integer):
+class Page(options.Option):
     "The maximum collection size returned"
-    as_query = 'page'
-    min = 1
-    max = None
-    default = min
+    as_query = 'page',
+    field = fields.Integer(
+        min = 1
+        max = None
+        default = min
+    )
 
-class Size(options.Integer):
+class Size(options.Option):
     "The maximum collection size returned"
-    as_query = 'size'
-    min = 0
-    max = None
-    default = 20
+    as_query = 'size',
+    field = fields.Integer(
+        min = 0
+        max = None
+        default = 20
+    )
 
 
 class Slice(structures.NestedClass):

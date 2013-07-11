@@ -1,8 +1,8 @@
 from www.server.routes import Route
 from www.server.endpoints import Endpoint
 
-from .schema import Schema
-from .options import Options, Option
+from www.core.options import Options, Option
+from www.core.fields import String
 
 
 class Endpoint(Endpoint):
@@ -14,10 +14,13 @@ class One(Endpoint):
     methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
 
     options = Options(
-        identifier = Option(
+        Option(
             as_kwarg = 'uid',
-            help_text = "A unique identifier without a slash",
-        ),
+            field = String(
+                help_text = "A unique identifier without a slash",
+                required = True,
+            )
+        )
     )
 
     def GET(self, request):
@@ -41,10 +44,13 @@ class Few(Endpoint):
     methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
 
     options = Options(
-        identifier = Option(
+        Option(
             as_kwarg = 'uids',
-            help_text = "A list of identifiers without a slash",
-        ),
+            field = String(
+                help_text = "A list of identifiers without a slash",
+                required = True,
+            )
+        )
     )
 
     def GET(self, request):

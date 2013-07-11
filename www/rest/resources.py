@@ -15,8 +15,6 @@ A resource presents an interface which endpoints use:
     bulk_update(patch) / batch(patch)
 """
 
-from . import schema as s
-
 class Resource:
     def identify(self, representation):
         "Should return identification values for given data"

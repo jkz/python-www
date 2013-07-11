@@ -128,7 +128,7 @@ class Route:
             name, dot, rest = name.partition('.')
             path += getattr(self, name).reverse(rest, **kwargs)
         elif kwargs:
-            path = '{}?{}'.format(name, www.Query(kwargs))
+            path = www.URL(path, query=kwargs)
 
         # Return the total path from this part to the end
         return path

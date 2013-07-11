@@ -70,7 +70,7 @@ class Field:
 
 
     def parse(self, value):
-        value = self.input(value)
+        value = self.convert(value)
         self.validate(value)
         run_validators(self.validators, value)
         return value
