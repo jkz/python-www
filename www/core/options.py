@@ -37,7 +37,7 @@ class Option:
 
             field       # a field object, most config goes in there
         """
-        self.lookup = conf.pop('options', {})
+        self.options = conf.pop('options', {})
         for key, val in conf.items():
             if key.startswith('as_'):
                 self.options[key] = val
@@ -47,30 +47,32 @@ class Option:
     def lookup_ordered(self):
         for container in self.order:
             if container in self.options:
-                yield container
+                yield container, self.options[container]
 
-    def extract(self, object, param, convert=None):
+    def extract(self, container, object, param, convert=None):
         try:
             value = self.containers[container](self, object, param)
         except (KeyError, AttributeError):
-            raise Missing
+            raise exceptions.Missing
 
         if convert:
             return convert(value)
         return value
 
     def find(self, object):
-        for pair in self.lookup_ordered():
+        for container, pair in self.lookup_ordered():
             if isinstance(pair, (list, tuple)):
                 param, convert = pair
             else:
                 param, convert = pair, None
 
             try:
-                return self.extract(object, param, convert)
+                return self.extract(container, object, param, convert)
             except exceptions.Missing:
                 continue
         else:
+            if self.field.default:
+                return self.field.default
             raise exceptions.Missing
 
     def meta(self):

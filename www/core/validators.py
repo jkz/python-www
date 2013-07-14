@@ -16,15 +16,15 @@ class Validator:
         key = self.key(input)
         if self.cmp(key, self.value):
             raise exceptions.ValidationError(
-                    self.message.format(value=self.value, input=input, key=key)
+                    self.message.format(value=self.value, input=input, key=key))
 
 class Min(Validator):
     message = "Can't be less than {value}, (is {input})"
-    cmp = lambda self, x, y: x > y
+    cmp = lambda self, x, y: x < y
 
 class Max(Validator):
     message = "Can't be more than {value}, (is {input})"
-    cmp = lambda self, x, y: x < y
+    cmp = lambda self, x, y: x > y
 
 class Length(Validator):
     message = "Must be {value} long, (of {input} is {key})"
@@ -44,7 +44,7 @@ def run_validators(validators, value):
         try:
             validator(value)
         except exceptions.ValidationError as e:
-            messages.append(e.messages)  #TODO: proper error messages
+            messages.append(str(e))  #TODO: proper error messages
 
     if messages:
         raise exceptions.ValidationError(messages)

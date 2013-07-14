@@ -5,6 +5,10 @@ A suggested usage pattern is to have resources use fixed interfaces
 to make endpoints agnostic and resources pluggable.
 """
 
+import www
+
+from www.server import responses
+
 class Endpoint(layers.Layer):
     # The methods that are allowed on this endpoint
     methods = www.methods.ALL

@@ -1,5 +1,8 @@
 import www
 
+from www.core import options as o
+from www.core import fields as f
+
 from www.utils import cached_property
 
 import mimeparse
@@ -54,26 +57,26 @@ class Negotiate(layers.Layer):
                 as_kwarg  = 'ext',
                 as_query  = 'format',
                 as_header = ('Accept', self.accept_header),
-                field = fields.String(
+                field = f.String(
                     choices   = self.accept_types,
                     default   = self.accept_types[0],
                     help_text = "The response data format",
                 )
-            ],
-            content_type: [
+            ),
+            content_type = options.Option(
                 as_query  = 'content_type',
                 as_header = ('Content-Type', self.content_type_header),
-                field = fields.String(
+                field = f.String(
                     choices   = self.content_types,
                     default   = self.content_types[0],
                     help_text = "The request data format",
                 )
-            ],
-            language = [
+            ),
+            language = options.Option(
                 as_kwarg  = 'lang',
                 as_query  = 'lang',
                 as_header = 'Accept-Language',
-                field = fields.String(
+                field = f.String(
                     choices   = self.languages,
                     default   = self.languages[0],
                     help_text = "The repsonse data language",
@@ -135,21 +138,21 @@ class Serialize(layers.Layer):
     @layers.options(
         pretty = o.Option(
             as_query  = 'pretty',
-            field = fields.Boolean(
+            field = f.Boolean(
                 default   = False,
                 help_text = "When 'true' the json is formatted nicely.",
             )
         ),
         indent = o.Option(
             as_query  = 'indent',
-            field = fields.Integer(
+            field = f.Integer(
                 default   = 4,
                 help_text = "Number of indentation spaces for pretty json.",
             )
         ),
         sort_keys = o.Option(
             as_query  = 'sort_keys',
-            fields = fields.Boolean(
+            field = f.Boolean(
                 default   = True,
                 help_text = "When 'true' the keys are sorted"
             )
@@ -165,7 +168,7 @@ class Serialize(layers.Layer):
     @layers.options(
         json_p = o.Option(
             as_query  = 'callback',
-            field = fields.String(
+            field = f.String(
                 help_text = "The local callback function that wraps the
                 response",
             )

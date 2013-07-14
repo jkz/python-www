@@ -111,7 +111,7 @@ class Tuple(tuple):
         for data, field in zip(data, self.readables()):
             value = self.extract_output(data)
             try:
-                output.append(field.output(value))
+                output.append(field.revert(value))
             except exceptions.Omitted:
                 output.append(value)
         return output

@@ -59,11 +59,11 @@ class Resource:
         "Return a filtered entity collection"
         raise responses.NotImplemented
 
-    def bulk_delete(self, **options):
+    def drop(self, **options):
         "Remove a filtered entity collection"
         raise NotImplementedError
 
-    def bulk_update(self, patch, **options):
+    def batch(self, patch, **options):
         "Update each entity of a filtered collection with the same patch"
         raise NotImplementedError
 

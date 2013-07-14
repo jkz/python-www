@@ -1,5 +1,5 @@
 from . import exceptions
-from .validators import run_validators
+from . import validators
 
 class Field:
     """
@@ -14,11 +14,15 @@ class Field:
     # The datatype of the field
     primitive = 'string'
 
-    # The name of the field on its corresponding internal datastructure
-    alias = None
+    # Alias has 4 modes:
+    # - str: the name of the field on its corresponding internal datastructure
+    # - int: the index on given tuple
+    # - True: the name configured for the calling context
+    # - False: none, takes an entire object
+    alias = True
 
     # The value used when not given
-    default = None
+    default = exceptions.Omitted
 
     # A tuple of values allowed
     choices = None
@@ -30,6 +34,7 @@ class Field:
     nullable = False
 
     # Flags whether this field requires a value
+    #XXX takes precedence over default when
     required = True
 
     # A user friendly description of the field
@@ -43,10 +48,42 @@ class Field:
     writable = True
 
     def __init__(self, **kwargs):
-        validators = conf.pop('validators')
-        if validators:
-            self.validators += validators
-        self.__dict__.update(conf)
+        _validators = kwargs.pop('validators', False)
+        if _validators:
+            self.validators += _validators
+
+        self.__dict__.update(kwargs)
+
+    def get_default(self):
+        #XXX This test could be softer and more pythonic
+        if self.default is exceptions.Omitted and self.required:
+            raise exceptions.Missing
+        try:
+            raise self.default
+        except TypeError:
+            return self.default
+
+
+    def accessor(self, name):
+        if self.alias is True:
+            return name
+        elif self.alias is False:
+            return None
+        else:
+            return self.alias
+
+    def extract(self, object, key):
+        accessor = self.accessor(key)
+        if accessor is not None:
+            try:
+                if hasattr(object, '__getitem__'):
+                    return object[accessor]
+                else:
+                    return getattr(object, accessor)
+            except (IndexError, KeyError, AttributeError):
+                return self.get_default()
+
+        return object
 
     def convert(self, value):
         """Return internal representation of value"""
@@ -59,20 +96,22 @@ class Field:
     def validate(self, value):
         if value in self.nulls:
             if not self.nullable:
-                raise exceptions.Missing
-
-            if not self.required:
-                raise exceptions.Omitted
+                raise exceptions.ValidationError('Not nullable')
+            return
 
         if self.choices and not value in self.choices:
             raise exceptions.ValidationError('{} not in {}'.format(value,
-                    self.choices)
+                    self.choices))
 
+        validators.run_validators(self.validators, value)
 
     def parse(self, value):
-        value = self.convert(value)
+        #XXX Any null value converts to None here, this decision is not final
+        if value in self.nulls:
+            value = None
+        else:
+            value = self.convert(value)
         self.validate(value)
-        run_validators(self.validators, value)
         return value
 
     def meta(self):
@@ -90,7 +129,7 @@ class Field:
         return meta
 
 
-class Bool(Field):
+class Boolean(Field):
     """A value representing True or False"""
 
     primitive = 'boolean'
@@ -129,9 +168,9 @@ class Number(Field):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if self.min is not None:
-            self.validators += validators.Min(self.min)
+            self.validators += validators.Min(self.min),
         if self.max is not None:
-            self.validators += validators.Max(self.max)
+            self.validators += validators.Max(self.max),
 
     def meta(self):
         meta = super().meta()
@@ -212,7 +251,7 @@ class Tuple(Field):
 class Array(Field):
     field = Field()
 
-    def __init__(self, field, *, **kwargs):
+    def __init__(self, field, **kwargs):
         super().__init__(**kwargs)
         self.field = field
 
@@ -236,7 +275,7 @@ class Object(Field):
     writable = False
     schema = None
 
-    def __init__(self, schema, *, **kwargs):
+    def __init__(self, schema, **kwargs):
         self.schema = schema
         return super().__init__(**kwargs)
 

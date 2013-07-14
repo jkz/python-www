@@ -48,11 +48,6 @@ class Slice(structures.NestedClass):
 
     unlimited = 'none'
 
-    count_key = 'count'
-
-    next_key = 'next'
-    prev_key = 'prev'
-
     msg_invalid = "Must be an integer"
     msg_under = "Can't be less than {min}"
     msg_over = "Can't be more than {max}"
@@ -67,6 +62,7 @@ class Slice(structures.NestedClass):
         return self.options['offset'].min
 
     def get_uri(self, request, limit, offset):
+        #XXX Or should we pass routers here. Maybe add them to request objects?
         query = {self.limit_key: limit, self.offset_key: offset}
         return www.URL(request.location(), query=query)
 
@@ -89,7 +85,7 @@ class Slice(structures.NestedClass):
         count = self.get_count(collection)
 
         info = {
-            self.count_key: count,
+            'count': count,
         }
 
         limit = request['limit']
@@ -103,13 +99,15 @@ class Slice(structures.NestedClass):
         if limit:
             info[self.limit_key] = limit
 
+        info['href'] = self.get_uri(request, limit, offset)
+
         prev = self.get_prev(request, limit, offset)
         if prev:
-            info[self.prev_key] = prev
+            info['prev'] = prev
 
         next = self.get_next(request, limit, offset, count)
         if next:
-            info[self.next_key] = next
+            info['next'] = next
 
         return collection, info
 
