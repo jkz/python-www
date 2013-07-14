@@ -37,6 +37,10 @@ class MinLength(Min, Length):
 class MaxLength(Max, Length):
     message = "Can't be longer that {value}, (of {input} is {key})"
 
+class Regex(Validator):
+    message = "Does not match pattern"
+
+
 def run_validators(validators, value):
     messages = []
 

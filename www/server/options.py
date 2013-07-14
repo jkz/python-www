@@ -1,5 +1,14 @@
 class RequestOption(Option):
     #XXX This is ugly :( OrderedDict?
+    '''
+    as_query    # query parameter option key
+    as_kwarg    # url kwargs option key
+    as_header   # headers option key
+    as_meta     # cgi env option key
+    as_lambda   # function takes a request and returns a value
+    as_method   # a method name on the option's host class
+    '''
+
     order = (
         'as_query',
         'as_kwarg',

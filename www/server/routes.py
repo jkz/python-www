@@ -99,6 +99,7 @@ class Route:
             # Add nested routes
             if isinstance(val, Route):
                 self._routes.append(val)
+                # Make nested routes available as attributes
                 setattr(self, key, val)
             # Add url parts
             else:
@@ -134,7 +135,7 @@ class Route:
         return path
 
 
-    def resolve(self, path=None, **kwargs):
+    def resolve(self, path='', **kwargs):
         """
         Check if the path matches the pattern, if not, return None.
         If so, check if the remainder matches a nested pattern.

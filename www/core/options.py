@@ -23,20 +23,6 @@ class Option:
     field = None
 
     def __init__(self, **conf):
-        #XXX methods and requires are not used at the moment
-        """
-            as_query    # query parameter option key
-            as_kwarg    # url kwargs option key
-            as_header   # headers option key
-            as_meta     # cgi env option key
-            as_lambda   # function takes a request and returns a value
-            as_method   # a method name on the option's host class
-
-            methods     # http methods supporting the option
-            requires    # function takes a request and returns permission flag
-
-            field       # a field object, most config goes in there
-        """
         self.options = conf.pop('options', {})
         for key, val in conf.items():
             if key.startswith('as_'):
