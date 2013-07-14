@@ -38,7 +38,7 @@ class Field:
     required = True
 
     # A user friendly description of the field
-    help_text = ''
+    help_text = 'This is a field'
 
     # A tuple of callables which are all passed the value to validate
     validators = ()
@@ -56,8 +56,11 @@ class Field:
 
     def get_default(self):
         #XXX This test could be softer and more pythonic
-        if self.default is exceptions.Omitted and self.required:
-            raise exceptions.Missing
+        if self.default is exceptions.Omitted:
+            if self.nullable:
+                return None
+            if self.required:
+                raise exceptions.Missing
         try:
             raise self.default
         except TypeError:
@@ -72,14 +75,13 @@ class Field:
         else:
             return self.alias
 
-    def extract(self, object, key):
-        accessor = self.accessor(key)
-        if accessor is not None:
+    def extract(self, object, key=None):
+        if key is not None:
             try:
                 if hasattr(object, '__getitem__'):
-                    return object[accessor]
+                    return object[key]
                 else:
-                    return getattr(object, accessor)
+                    return getattr(object, key)
             except (IndexError, KeyError, AttributeError):
                 return self.get_default()
 
@@ -122,7 +124,7 @@ class Field:
         meta['primitive'] = self.primitive
         meta['readable'] = self.readable
         meta['writable'] = self.writable
-        if self.default is not None:
+        if self.default is not exceptions.Omitted:
             meta['default'] = self.default
         if self.choices:
             meta['choices'] = self.choices
@@ -292,4 +294,5 @@ class Object(Field):
     def meta(self):
         if self.schema:
             return self.schema.meta()
+        return super().schema()
 

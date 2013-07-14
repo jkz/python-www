@@ -4,6 +4,7 @@ from www.core import exceptions
 from www.core import validators
 from www.core import fields
 from www.core import options
+from www.core import schema
 
 E = exceptions.ValidationError
 v = validators
@@ -78,12 +79,14 @@ class TestField(unittest.TestCase):
             alias = True
             key = False
 
-        self.assertEqual(as_str.extract(Object(), 'key'), True)
-        self.assertEqual(as_str.extract({'alias': True}, 'key'), True)
-        self.assertEqual(as_int.extract([False, True], 'key'), True)
-        self.assertEqual(as_true.extract({'alias': False, 'key': True}, 'key'),
-            True)
-        self.assertEqual(as_false.extract(True, 'key'), True)
+        for field, obj in [
+            (as_str, Object()),
+            (as_str, {'alias': True}),
+            (as_int, [False, True]),
+            (as_true, {'alias': False, 'key': True}),
+            (as_false, True),
+        ]:
+            self.assertEqual(field.extract(obj, field.accessor('key')), True)
 
 
     def test_choices(self):
@@ -128,6 +131,8 @@ class TestField(unittest.TestCase):
         for null in nulls:
             self.assertRaises(E, notnullable.parse, null)
 
+    def test_meta(self):
+        pass
 
 
 class TestOption(unittest.TestCase):
@@ -150,4 +155,77 @@ class TestOption(unittest.TestCase):
         self.assertEqual(option.parse(obj), 'ATTR')
         obj.dict['key'] = 'KEY'
         self.assertEqual(option.parse(obj), 'KEY')
+
+class Href(fields.Field):
+    writable = False
+
+    def revert(self, val):
+        return '/users/{}'.format(val['id'])
+
+class SchemaTestCase(unittest.TestCase):
+    def test_schema(self):
+        thing = schema.Object(
+            id = fields.Integer(writable=True),
+            name = fields.String(writable=True),
+            href = Href(alias=False),
+        )
+
+        person = thing + schema.Object(
+            friends = fields.Array(
+                Href(),
+                writable = False,
+            ),
+        )
+
+        quote = thing + schema.Object(
+            text = fields.String(writable=True),
+            person = fields.Object(person),
+        )
+
+        sam = {
+            'id': 1,
+            'name': 'Sam',
+            'friends': [],
+        }
+
+        frodo = {
+            'id': 2,
+            'name': 'Frodo',
+            'friends': [sam],
+        }
+
+        smeagol = {
+            'id': 3,
+            'name': 'Smeagol',
+            'friends': [sam, frodo],
+        }
+
+        sorry = {
+            'id': 10,
+            'name': 'Sorry',
+            'person': sam,
+            'text': 'Sorry mister Frodo',
+        }
+
+        tricksed = {
+            'id': 11,
+            'name': 'Tricksed',
+            'person': smeagol,
+            'text': 'Tricksed us?!',
+        }
+
+        print(person.convert(sam))
+        print(person.convert(frodo))
+        print(person.convert(smeagol))
+
+        print(person.revert(sam))
+        print(person.revert(frodo))
+        print(person.revert(smeagol))
+
+        print(quote.convert(sorry))
+        print(quote.convert(tricksed))
+
+        print(quote.revert(sorry))
+        print(quote.revert(tricksed))
+
 

@@ -9,15 +9,27 @@ def extract(data, key, required=True):
         return data(key)
     if key is None:
         return data
-    if isinstance(data, dict):
+    if hasattr(data, '__getitem__'):
         return data[key]
     else:
         return getattr(data, key)
-    assert False
 
-class Object(dict):
+class Schema:
+    #TODO immutable
     def __add__(self, other):
-        if not isinstance(other, Schema):
+        """Combine two schemas into a new one"""
+        raise NotImplementedError
+
+    def extract_input(self, field, data, key=None):
+        return extract(data, key)
+
+    def extract_output(self, field, data, key=None):
+        return field.extract(data, key)
+
+
+class Object(dict, Schema):
+    def __add__(self, other):
+        if not isinstance(other, Object):
             raise TypeError
         new = self.__class__(self)
         new.update(other)
@@ -36,20 +48,13 @@ class Object(dict):
             if field.readable:
                 yield name, field
 
-
-    def extract_input(self, data, key=None):
-        return extract(data, key)
-
-    def extract_output(self, data, key=None):
-        return extract(data, key)
-
     def convert(self, data):
         input = {}
         for name, field in self.writables():
-            alias = field.alias if field.alias is not None else name
-            value = self.extract_input(data, name)
+            key = field.accessor(name)
+            value = self.extract_input(field, data, name)
             try:
-                input[alias] = field.parse(extract)
+                input[key] = field.parse(value)
             except exceptions.Omitted:
                 continue
         return input
@@ -57,8 +62,8 @@ class Object(dict):
     def revert(self, data):
         output = {}
         for name, field in self.readables():
-            alias = field.alias if field.alias is not None else name
-            value = self.extract_output(data, alias)
+            key = field.accessor(name)
+            value = self.extract_output(field, data, key)
             try:
                 output[name] = field.revert(value)
             except exceptions.Omitted:
@@ -70,9 +75,9 @@ class Object(dict):
 
 
 
-class Tuple(tuple):
+class Tuple(tuple, Schema):
     def __add__(self, other):
-        if not isinstance(other, TupleSchema):
+        if not isinstance(other, Tuple):
             raise TypeError
         return self.__class__(tuple(self) + other)
 
@@ -90,12 +95,6 @@ class Tuple(tuple):
             if field.readable:
                 yield field
 
-    def extract_input(self, data, key=None):
-        return extract(data, key)
-
-    def extract_output(self, data, key=None):
-        return extract(data, key)
-
     def convert(self, data):
         input = []
         for data, field in zip(data, self.writables()):
@@ -104,17 +103,17 @@ class Tuple(tuple):
                 input.append(field.parse(value))
             except exceptions.Omitted:
                 input.append(value)
-        return input
+        return tuple(input)
 
     def revert(self, data):
         output = []
         for data, field in zip(data, self.readables()):
-            value = self.extract_output(data)
+            value = self.extract_output(field, data)
             try:
                 output.append(field.revert(value))
             except exceptions.Omitted:
                 output.append(value)
-        return output
+        return tuple(output)
 
     def meta(self):
         return tuple(field.meta() for field in self)
