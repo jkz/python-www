@@ -107,7 +107,7 @@ class Field:
 
         validators.run_validators(self.validators, value)
 
-    def parse(self, value):
+    def resolve(self, value):
         #XXX Any null value converts to None here, this decision is not final
         if value in self.nulls:
             value = None
@@ -115,6 +115,12 @@ class Field:
             value = self.convert(value)
         self.validate(value)
         return value
+
+    def reverse(self, value):
+        if value is None:
+            return self.nulls[0]
+        else:
+            return self.revert(value)
 
     def meta(self):
         meta = {}

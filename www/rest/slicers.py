@@ -44,14 +44,6 @@ class Size(options.Option):
 
 class Slice(structures.NestedClass):
     """An offset/limit slicer"""
-    silent = False
-
-    unlimited = 'none'
-
-    msg_invalid = "Must be an integer"
-    msg_under = "Can't be less than {min}"
-    msg_over = "Can't be more than {max}"
-
     options = options.Options(
         limit = Limit(),
         offset = Offset(),

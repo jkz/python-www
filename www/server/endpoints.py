@@ -46,7 +46,7 @@ class Endpoint(layers.Layer):
         response['Allow'] = ', '.join(self.methods)
         raise response
 
-    def call(self, request):
+    def resolve(self, request):
         if not request['method'] in self.methods:
             raise www.MethodNotAllowed
 

@@ -29,6 +29,10 @@ class Schema:
 
 class Object(dict, Schema):
     def __add__(self, other):
+        """
+        Combine two object schemas. The right side takes precedence over
+        the left.
+        """
         if not isinstance(other, Object):
             raise TypeError
         new = self.__class__(self)
@@ -39,33 +43,42 @@ class Object(dict, Schema):
         return self + other
 
     def writables(self):
+        """Yield all (name, field) pairs with fields that are writable"""
         for name, field in self.items():
             if field.writable:
                 yield name, field
 
     def readables(self):
+        """Yield all (name, field) pairs with fields that are readable"""
         for name, field in self.items():
             if field.readable:
                 yield name, field
 
-    def convert(self, data):
+    def resolve(self, data):
+        """
+        Take all writable fields and build a structure from given input
+        data with the fields.
+        """
         input = {}
         for name, field in self.writables():
             key = field.accessor(name)
             value = self.extract_input(field, data, name)
             try:
-                input[key] = field.parse(value)
+                input[key] = field.resolve(value)
             except exceptions.Omitted:
                 continue
         return input
 
-    def revert(self, data):
+    def reverse(self, data):
+        """
+        Take all readable fields and build a structure from given output.
+        """
         output = {}
         for name, field in self.readables():
             key = field.accessor(name)
             value = self.extract_output(field, data, key)
             try:
-                output[name] = field.revert(value)
+                output[name] = field.reverse(value)
             except exceptions.Omitted:
                 continue
         return output
@@ -95,22 +108,22 @@ class Tuple(tuple, Schema):
             if field.readable:
                 yield field
 
-    def convert(self, data):
+    def resolve(self, data):
         input = []
         for data, field in zip(data, self.writables()):
             value = self.extract_input(data)
             try:
-                input.append(field.parse(value))
+                input.append(field.resolve(value))
             except exceptions.Omitted:
                 input.append(value)
         return tuple(input)
 
-    def revert(self, data):
+    def reverse(self, data):
         output = []
         for data, field in zip(data, self.readables()):
             value = self.extract_output(field, data)
             try:
-                output.append(field.revert(value))
+                output.append(field.reverse(value))
             except exceptions.Omitted:
                 output.append(value)
         return tuple(output)

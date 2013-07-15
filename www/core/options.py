@@ -35,15 +35,20 @@ class Option:
             if container in self.options:
                 yield container, self.options[container]
 
-    def extract(self, container, object, param, convert=None):
+    def parse(self, container, value):
+        parser = self.parsers.get(container)
+        if not parser:
+            parser = getattr(self, 'parse_' + container)
+        else:
+            return value
+        return parser(value)
+
+    def extract(self, container, object, param):
         try:
             value = self.containers[container](self, object, param)
         except (KeyError, AttributeError):
             raise exceptions.Missing
-
-        if convert:
-            return convert(value)
-        return value
+        return self.parse(container, value)
 
     def find(self, object):
         for container, pair in self.lookup_ordered():
@@ -97,7 +102,7 @@ class Options(dict):
         Return an iterator yielding all name, value pairs for configured
         options.
         """
-        for name, option in self.options:
+        for name, option in self.items():
             try:
                 yield name, option(object)
             except exceptions.Missing:

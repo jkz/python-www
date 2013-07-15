@@ -1,4 +1,26 @@
+import www
+import io
+
 from . import structures
+
+class Method:
+    def convert(self, verb):
+        if verb is not None:
+            VERB = verb.upper()
+            if not self.allow_custom and VERB not in www.methods.ALL:
+                raise www.MethodNotAllowed(VERB)
+        return verb
+
+    def __init__(self, verb=None, allow_custom=False):
+        self.verb = self.convert(verb)
+        self.allow_custom = allow_custom
+
+    def __set__(self, instance, verb):
+        self.verb = self.convert(verb)
+
+    def __get__(self, instance, owner):
+        return self.verb
+
 
 class Query(structures.MultiDict):
     def __init__(self, *args, verbatim=False, **kwargs):
@@ -23,93 +45,59 @@ class Header(structures.MultiDict):
         return '\n'.join('{}: {}'.format(key, ','.join(map(str, vals))) for key, vals in self.listvalues())
 
 
+class Body:
+    """
+    An interface to all kinds of request bodies.
+    """
+    def __init__(self, body):
+        self.body = body
+
+    def read(self, size):
+        return self.body.read()
+
+    def readline(self):
+        return self.body.readline()
+
+    def readlines(self, hint):
+        return self.body.readlines(hint)
+
+    def __iter__(self):
+        return self.body.__iter__()
+
+    def __str__(self):
+        return str(self.body)
+
+class ErrorStream:
+    def flush(self):
+        pass
+
+    def write(self, str):
+        pass
+
+    def writelines(self, seq):
+        pass
+
+
 class Request:
     class Error(Error): pass
 
     def __init__(
             self,
             url = '',
-            method = 'GET',
+            method = None,
             body = None,
             headers = None,
+            meta = None,
             resource = None,
             **kwargs
     ):
+        # (. )( .)! Not all named arguments are passed to the Resource.
         self.resource = resource or Resource(url, **kwargs)
-
-        self.method = method.upper()
+        self.method = Method(method)
         self.headers = Header(headers or {})
-        self.body = body
-
+        self.body = Body(body or io.StringIO())
+        self.meta = Meta(meta or {})
 
     def __str__(self):
-        return '{} {}'.format(self.method.upper(), self.resource)
-
-
-class WSGIRequest(Request):
-    def __init__(env):
-
-    meta = {}
-    headers = {}
-
-
-    url = env.pop('PATH')
-    query_string = env.pop('QUERY_STRING')
-
-    for key in (
-        'DOCUMENT_ROOT',
-        #'HTTP_COOKIE',
-        #'HTTP_HOST',
-        #'HTTP_REFERER',
-        #'HTTP_USER_AGENT',
-        'HTTPS',
-        #'PATH',
-        #'QUERY_STRING',
-        'REMOTE_ADDR',
-        'REMOTE_HOST',
-        'REMOTE_PORT',
-        'REMOTE_USER',
-        'REQUEST_METHOD',
-        'REQUEST_URI',
-        'SCRIPT_FILENAME',
-        'SCRIPT_NAME',
-        'SERVER_ADMIN',
-        'SERVER_NAME',
-        'SERVER_PORT',
-        'SERVER_SOFTWARE',
-    ):
-        meta[key] = env.pop(key)
-
-    for key, val in env.items():
-        # Remove 'HTTP_' from keys, then lower and replace '_' by '-'
-        headers[key[5:].lower().replace('_', '-')] = val
-
-    return meta, headers
-
-
-
-class ClientRequest:
-    def params(self):
-        self.prepare()
-
-        method = self.method.upper()
-
-        url = self.resource.path
-
-        if self.body is None and self.data and method in ('POST', 'PUT', 'PATCH'):
-            body = Query(**self.data)
-        else:
-            body = self.body
-
-        headers = self.headers.copy()
-        return (method, url, body, headers)
-
-    def stream(self, **kwargs):
-        return self.resource.connection.start(self, **kwargs)
-
-    def __call__(self):
-        return self.resource.connection.fetch(*self.params())
-
-
-class ServerRequest:
+        return '{} {}'.format(self.method, self.resource)
 

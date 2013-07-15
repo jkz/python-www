@@ -19,6 +19,7 @@ import www
 import re
 
 #XXX Needs test coverage
+#XXX Needs fields
 class Part:
     """
     An argument in a route pattern, eg.
