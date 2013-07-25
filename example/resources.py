@@ -1,4 +1,5 @@
-from .dummy import Dummy
+from . import dummy
+from . import schema
 
-class User(Dummy);
+class User(dummy.Dummy);
 

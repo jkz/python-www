@@ -14,14 +14,17 @@ class Field:
     # The datatype of the field
     primitive = 'string'
 
-    # Alias has 4 modes:
-    # - str: the name of the field on its corresponding internal datastructure
-    # - int: the index on given tuple
-    # - True: the name configured for the calling context
-    # - False: none, takes an entire object
+    # Alias is used to find the fields' respective value on a data object.
+    # It has 5 modes:
+    # - str: the name of the field on an object
+    # - int: the index on a given tuple
+    # - True: the accessor configured for the calling context
+    # - False: pass the entire object
+    # - None: do not pass anything at all
     alias = True
 
     # The value used when not given
+    # Exceptions are automatically raised
     default = exceptions.Omitted
 
     # A tuple of values allowed
@@ -54,6 +57,10 @@ class Field:
 
         self.__dict__.update(kwargs)
 
+    @property
+    def null(self):
+        return self.nulls[0]
+
     def get_default(self):
         #XXX This test could be softer and more pythonic
         if self.default is exceptions.Omitted:
@@ -65,7 +72,6 @@ class Field:
             raise self.default
         except TypeError:
             return self.default
-
 
     def accessor(self, name):
         if self.alias is True:
@@ -118,7 +124,7 @@ class Field:
 
     def reverse(self, value):
         if value is None:
-            return self.nulls[0]
+            return self.null
         else:
             return self.revert(value)
 

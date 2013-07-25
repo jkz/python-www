@@ -67,6 +67,7 @@ class Body:
     def __str__(self):
         return str(self.body)
 
+
 class ErrorStream:
     def flush(self):
         pass
@@ -101,3 +102,15 @@ class Request:
     def __str__(self):
         return '{} {}'.format(self.method, self.resource)
 
+
+class Response:
+    def __init__(self,
+            status,
+            reason=None,
+            headers=None,
+            body=body,
+    ):
+        self.status = status
+        self.reason = reason
+        self.headers = Header(headers or {})
+        self.body = Body(body or io.StringIO())

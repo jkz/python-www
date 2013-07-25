@@ -32,9 +32,9 @@ class Page(options.Option):
         default = min
     )
 
-class Size(options.Option):
+class PageSize(options.Option):
     "The maximum collection size returned"
-    as_query = 'size',
+    as_query = 'per_page',
     field = fields.Integer(
         min = 0
         max = None
@@ -106,7 +106,7 @@ class Slice(structures.NestedClass):
 
 class Paginate(Slice):
     options = options.Options(
-        limit = Size(),
+        limit = PageSize(),
         offset = Page()
     )
 

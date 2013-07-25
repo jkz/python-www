@@ -23,7 +23,6 @@ def entity(api, resource):
         uid = f.Integer(
             writable = False,
         ),
-        name = f.String(),
         href = OneHref(
             resource = resource,
             router = api.router,

@@ -1,18 +1,11 @@
 """
 Schemas facilitate data marshaling. In this case meaning:
 transforming input data to output data and vice versa.
+
+A schema is a collection of fields with names. Schemas can be
+nested by fields.
 """
 from . import exceptions
-
-def extract(data, key, required=True):
-    if callable(data):
-        return data(key)
-    if key is None:
-        return data
-    if hasattr(data, '__getitem__'):
-        return data[key]
-    else:
-        return getattr(data, key)
 
 class Schema:
     #TODO immutable
@@ -20,11 +13,15 @@ class Schema:
         """Combine two schemas into a new one"""
         raise NotImplementedError
 
-    def extract_input(self, field, data, key=None):
-        return extract(data, key)
-
-    def extract_output(self, field, data, key=None):
-        return field.extract(data, key)
+    def extract(self, data, key, required=True):
+        if callable(data):
+            return data(key)
+        if key is None:
+            return data
+        if hasattr(data, '__getitem__'):
+            return data[key]
+        else:
+            return getattr(data, key)
 
 
 class Object(dict, Schema):
@@ -62,7 +59,7 @@ class Object(dict, Schema):
         input = {}
         for name, field in self.writables():
             key = field.accessor(name)
-            value = self.extract_input(field, data, name)
+            value = self.extract(data, name)
             try:
                 input[key] = field.resolve(value)
             except exceptions.Omitted:
@@ -76,7 +73,7 @@ class Object(dict, Schema):
         output = {}
         for name, field in self.readables():
             key = field.accessor(name)
-            value = self.extract_output(field, data, key)
+            value = self.field.extract(data, key)
             try:
                 output[name] = field.reverse(value)
             except exceptions.Omitted:
@@ -85,7 +82,6 @@ class Object(dict, Schema):
 
     def meta(self):
         return {name : field.meta() for name, field in self.items()}
-
 
 
 class Tuple(tuple, Schema):
@@ -99,19 +95,20 @@ class Tuple(tuple, Schema):
         return self
 
     def writables(self):
-        for field in self:
+        for index, field in enumerate(self):
             if field.writable:
-                yield field
+                yield index, field
 
     def readables(self):
-        for field in self:
+        for index, field in enumerate(self):
             if field.readable:
-                yield field
+                yield index, field
 
     def resolve(self, data):
         input = []
-        for data, field in zip(data, self.writables()):
-            value = self.extract_input(data)
+        for index, field in self.writables():
+            key = field.accessor(index)
+            value = self.extract(data, key)
             try:
                 input.append(field.resolve(value))
             except exceptions.Omitted:
@@ -120,8 +117,9 @@ class Tuple(tuple, Schema):
 
     def reverse(self, data):
         output = []
-        for data, field in zip(data, self.readables()):
-            value = self.extract_output(field, data)
+        for index, field in enumerate(self.readables()):
+            key = field.accessor(index)
+            value = self.field.extract(data, key)
             try:
                 output.append(field.reverse(value))
             except exceptions.Omitted:

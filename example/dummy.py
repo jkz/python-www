@@ -1,7 +1,23 @@
 from www.client.resources import Resource
 
+class DB:
+    def __init__(self):
+        self.dbs = {}
+
+    def __get__(self, obj, cls):
+        if not obj.name in self.dbs:
+            self.dbs[obj.name] = {}
+        return self.dbs[obj.name]
+
+    def __set__(self, obj, val):
+        self.dbs[obj.name] = val
+
+    def __del__(self, obj):
+        del self.dbs[obj.name]
+
+
 class Dummy(Resource):
-    db = {}
+    db = DB()
     last_uid = 0
 
     def new_uid(self):
