@@ -7,8 +7,10 @@ class Field:
     method for changing external to internal values, and revert for the
     opposite.
 
-    Inward data, passed to convert can be validated by running parse in stead.
-    Outward data, passed to revert is considered valid.
+    Inward data should e passed to resolve, where it will be converted and
+    validated.
+    Outward data, passed to reverse is considered valid and just needs
+    reversion.
     """
     #XXX inspired by JSON
     # The datatype of the field

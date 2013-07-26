@@ -1,4 +1,3 @@
-from www.server.routes import Route
 from www.server.endpoints import Endpoint
 
 from www.core.options import Options, Option
@@ -88,16 +87,9 @@ class All(Endpoint):
     def PATCH(self, request):
         "Update each element a filtered collection with the same patch"
         objects = self.resource.query(request)
-        self.resource.bulk_update(request, objects)
+        self.resource.batch(request, objects)
 
     def DELETE(self, request):
         "Delete a filtered collection"
-        self.resource.bulk_delete(request)
-
-
-def crud_route(resource, one=Int(), few=Ints()):
-    "Set up all, few and one resource endpoints"
-    return Route('/' + resource.name, All(resource),
-            few = Route('/{uids}', Few(resource), uids=few),
-            one = Route('/{uid}', One(resource), uid=one),
+        self.resource.drop(request)
 

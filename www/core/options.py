@@ -2,38 +2,74 @@ import copy
 
 from . import exceptions
 
+class Lookup:
+    container = None
+    param = None
+
+    def __init__(self, container, param, convert=None):
+        self.container = container
+        self.param = param
+        if convert:
+            self.convert = convert
+
+    def convert(self, option, value):
+        return value
+
+    def __call__(self, value):
+        pass
+
+
 class Option:
     """
-    The Option class extracts options from an object.
+    The Option class extracts options from an object. The Option object has a
+    set of containers and on order in which these containers are to be
+    consulted. The containers are specified by functions with a signature of
+    container(
+        self, # the option
+        obj,  # the object to extract from
+        param # the configured parameter for this option
+    )
     """
     # A dictionary of container accessors with signature
     #    accessor(self, obj, param)
     containers = {}
 
-    # The order in which the containers should be accessed
+    # The order in which the containers should be accessed. Each value
+    # in order is checked for presence as attribute and returned as either
     order = ()
 
     # A dictionary mapping containers keys to either:
     #     param
     # OR
     #     tuple(param, converter)
+    # This ditionary exists so it can easily be overwritten entirely
     options = {}
 
     # The field that validates and converts the actual value
     field = None
 
     def __init__(self, **conf):
-        self.options = conf.pop('options', {})
-        for key, val in conf.items():
-            if key.startswith('as_'):
-                self.options[key] = val
-            else:
-                setattr(self, key, val)
+        # First take out the options parameter, or create a new
+        self.options = conf.pop('options', copy(self.options))
+        self.order = conf.pop('order', self.order)
 
-    def lookup_ordered(self):
+        # Add all attributes present in order to options
+        for key, val in self.__dict__.items():
+            if key in self.order:
+                self.options[key] = val
+
+        for key, val in conf.items():
+            # Add all arguments present in order to options
+            if key in self.order:
+                self.options[key] = val
+            # Add all other arguments as attributes
+            else:
+            setattr(self, key, val)
+
+    def lookups_ordered(self):
         for container in self.order:
-            if container in self.options:
-                yield container, self.options[container]
+            if hasattr(self, container):
+                yield container, getattr(self, container)
 
     def parse(self, container, value):
         parser = self.parsers.get(container)
@@ -51,7 +87,7 @@ class Option:
         return self.parse(container, value)
 
     def find(self, object):
-        for container, pair in self.lookup_ordered():
+        for container, pair in self.lookups_ordered():
             if isinstance(pair, (list, tuple)):
                 param, convert = pair
             else:

@@ -1,3 +1,22 @@
+class Query(Extractor):
+    def extract(self, request):
+        return request.query[self.param]
+
+class Kwarg(Extractor):
+    def extract(self, request):
+        return request.kwarg[self.param]
+
+class Header(Extractor):
+    def extract(self, request):
+        return request.header[self.param]
+
+class Meta(Extractor):
+    def extract(self, request):
+        return request.meta[self.param]
+
+class Lambda(Call):
+    pass
+
 class RequestOption(Option):
     #XXX This is ugly :( OrderedDict?
     '''

@@ -1,8 +1,8 @@
 import math
 import datetime
 
-from . import exceptions
-from . import guards
+from www.core import exceptions
+from www.server import guards
 
 class Throttle(guards.Guard):
     """

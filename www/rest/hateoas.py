@@ -26,6 +26,5 @@ class Few(Href):
         )
 
 class All(Href):
-    def revert(self, value):
-        return self.router.reverse(self.resource.name)
+    pass
 

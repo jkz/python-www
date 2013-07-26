@@ -14,6 +14,7 @@ The mapping scheme is a bijection:
     resolve maps url to endpoint + kwargs
     reverse maps names + kwargs to urls
 """
+import collections
 
 import www
 import re
@@ -93,22 +94,31 @@ class Route:
         self._serial = Route._last_serial = self._last_serial + 1
         self.pattern = pattern
         self.endpoint = endpoint
-        self._routes = []
+        self.routes = collections.OrderedDict()
         self._parts = {}
+
+        routes = []
 
         for key, val in kwargs.items():
             # Add nested routes
             if isinstance(val, Route):
-                self._routes.append(val)
-                # Make nested routes available as attributes
-                setattr(self, key, val)
+                routes.append((key, val))
             # Add url parts
             else:
-                self._parts[key] = val
+                parts[key] = val
 
-        # Sort the routes by serial
-        self._routes = sorted(self._routes, key=lambda x: x._serial)
+        # Add the routes sorted by serial
+        for key, val in sorted(routes, key=lambda x: x[1]._serial)
+            self.routes[key] = val
+
         self._compiled = re.compile(str(self))
+
+    def __getattr__(self, attr):
+        # Expose nested routes as attributes by their name
+        try:
+            return self._routes[attr]
+        except KeyError:
+            raise AttributeError
 
     def reverse(self, name='', **kwargs):
         """
@@ -160,7 +170,7 @@ class Route:
         unmatched = path[match.end():]
 
         # Look for a deeper match and return it if found
-        for route in self._routes:
+        for route in self.routes.values():
             deeper = route.resolve(unmatched)
             if deeper:
                 endpoint, _kwargs = deeper

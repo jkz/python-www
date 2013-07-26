@@ -50,8 +50,8 @@ class Dummy(Resource):
         self.db[uid] = copy.deepcopy(representation)
 
     def update(self, uid, patch):
-        for key, val in patch:
-            self.db[uid][key] = [val]
+        for key, val in patch.items():
+            self.db[uid][key] = val
 
     # Collection
     def query(self, filters):
@@ -67,5 +67,4 @@ class Dummy(Resource):
 
     def batch(self, patch, **options):
         for uid in self.db:
-            for key, val in patch.items():
-                self.db[uid][key] = val
+            self.update(uid, patch)

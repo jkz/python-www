@@ -14,8 +14,8 @@ class Schema:
         raise NotImplementedError
 
     def extract(self, data, key, required=True):
-        if callable(data):
-            return data(key)
+        if callable(key):
+            return key(data)
         if key is None:
             return data
         if hasattr(data, '__getitem__'):

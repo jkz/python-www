@@ -1,29 +1,36 @@
 from www.core import fields as f
 from www.core import schema as s
 
-class Href(f.String):
-    resource = None
-    router = None
-    writable = False
-    alias = False
+from . import hateoas
 
-    def revert(self, value):
-        return self.router.reverse(self.resource.name)
+"""
+For resolve:
+    We need something to select schemas.
+    This needs to happen before the endpoint is called.
 
-class OneHref(Href):
-    def revert(self, value):
-        return self.router.reverse(
-                self.resource.name + '.one',
-                uid=resource.identify(value)
-        )
+For revert:
+    We need something to select schemas.
+    This needs to happen before the data is called.
 
+
+Some options:
+    Schemas take options and conditionals
+    Schemas are combined by something else
+    Schemas should be composable at field granularity
+
+Some options:
+    Schemas take options and conditionals
+    Schemas are combined by something else
+    Schemas should be composable at field granularity
+
+"""
 
 def entity(api, resource):
     return s.Object(
         uid = f.Integer(
             writable = False,
         ),
-        href = OneHref(
+        href = hateoas.One(
             resource = resource,
             router = api.router,
         ),
@@ -33,7 +40,7 @@ def collection(api, resource):
     return s.Tuple(
         f.Array(entity),
         s.Object(
-            href = Href(
+            href = hateoas.All(
                 resource = resource,
                 router = api.router,
             ),
@@ -47,4 +54,5 @@ def collection(api, resource):
             )
     )
 )
+
 

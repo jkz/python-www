@@ -1,9 +1,10 @@
 import www
 
+from www import structures
+
 from www.core import options
 from www.core import fields
 
-from . import structures
 
 class Limit(options.Option):
     "The maximum collection size returned"
