@@ -16,9 +16,9 @@ class Method:
 
     def convert(self, verb):
         if verb is not None:
-            VERB = verb.upper()
-            if self.allowed is not None and VERB not in self.allowed:
-                raise exceptions.MethodNotAllowed(VERB)
+            verb = verb.upper()
+            if self.allowed is not None and verb not in self.allowed:
+                raise exceptions.MethodNotAllowed(verb)
         return verb
 
     def __set__(self, instance, verb):
@@ -61,7 +61,7 @@ class Port:
             return 80
 
     def __set__(self, obj, val):
-        self.port = val
+        self.port = int(val or 0) or None
 
 
 class Authority:
@@ -77,7 +77,7 @@ class Authority:
         ):
 
         # Split the url into scheme, port, host, query and path
-        _scheme, netloc, _, _, _ = lib.urlsplit(url)
+        _scheme, netloc, _, _, _ = lib.urlsplit(url, True)
 
         # Set the connection on self to extract parameters and enable requests.
         # split the netlocation into userinfo and hostinfo
@@ -88,9 +88,9 @@ class Authority:
         _host, _, _port = hostinfo.partition(':')
 
         self.scheme = scheme or _scheme or 'http'
-        self.host = host or _host or self.host
+        self.host = host or _host
         #XXX automatic port for default schemes could be desirable
-        self.port = Port(port or _port)
+        self.port = port or _port
         #self.username = username or _username or None
         #self.password = password or _password or None
 
@@ -113,7 +113,7 @@ class Authority:
 
     @property
     def server(self):
-        if (self.port is not None
+        if (self.port
         and not (self.port == 80 and self.scheme == 'http')
         and not (self.port == 443 and self.scheme == 'https')):
             return '{}:{}'.format(self.host, self.port)
@@ -162,11 +162,11 @@ class Resource:
         url = url or ''
 
         # Split the url into scheme, port, host, query and path
-        _scheme, _netloc, self.path, _query_string, self.fragment = lib.urlsplit(url)
+        _scheme, netloc, self.path, _query_string, self.fragment = lib.urlsplit(url, True)
 
         # Create a netlocation object
-        self.authority = authority or Authority(url, scheme=scheme, host=host,
-                port=port) #username=username, password=password)
+        self.authority = authority or Authority(netloc,
+                scheme=_scheme or scheme, host=host, port=port)
 
         # Override path if explicitly passed
         if path is not None:

@@ -1,28 +1,49 @@
 import unittest
-import www
+from www.core import sexy
+from www.core import exceptions
 
-class TestResource(unittest.TestCase):
+class TestMethod(unittest.TestCase):
     def test_basic(self):
-        result = www.Resource('//example.com/foo/', kitten='fluffy').url
-        expected = 'http://example.com/foo/?kitten=fluffy'
-        self.assertEqual(result, expected)
+        class Test:
+            method = sexy.Method()
+
+        t = Test()
+
+        self.assertEqual(t.method, None)
+        t.method = 'get'
+        self.assertEqual(t.method, 'GET')
+        self.assertRaises(exceptions.MethodNotAllowed, lambda: setattr(t, 'method', 'INVALID'))
+
 
 class TestRequest(unittest.TestCase):
     def test_basic(self):
-        result = www.Request('//example.com/foo/', kitten='fluffy').split()
-        expected = ('GET', '/foo/?kitten=fluffy', None)
-        print('result', result)
-        print('expected', expected)
+        result = sexy.Request('//example.com/foo/', kitten='fluffy').split()
+        expected = ('GET', '/foo/?kitten=fluffy', None, {})
         self.assertEqual(result, expected)
 
-class TestConnection(unittest.TestCase):
+class TestAuthority(unittest.TestCase):
     def test_basic(self):
-        conn = www.Connection('example.com', username='jess')
-        request = conn.create_request('/foo/', method='get')
-        result = str(request)
-        expected = 'GET http://jess@example.com/foo/'
+        for a in [
+            sexy.Authority('example.com'),
+            sexy.Authority('example.com/ignore'),
+            sexy.Authority('example.com:80'),
+            sexy.Authority('http://example.com'),
+            sexy.Authority('http://example.com:80'),
+            sexy.Authority(scheme='http', host='example.com', port=80),
+            sexy.Authority('wrong.com:80', host='example.com'),
+            sexy.Authority('example.com:81', port=80),
+            sexy.Authority('https://example.com', scheme='http'),
+        ]:
+            self.assertEqual(str(a), 'http://example.com')
+
+        boob = sexy.Authority(scheme='boob', host='boob', port=8008)
+        self.assertEqual(str(boob), 'boob://boob:8008')
+        self.assertEqual(str(sexy.Authority()), 'http://')
+
+class TestResource(unittest.TestCase):
+    def test_basic(self):
+        result = sexy.Resource('//example.com/foo/', kitten='fluffy').url
+        expected = 'http://example.com/foo/?kitten=fluffy'
         self.assertEqual(result, expected)
 
-    def _test_exceptions(self):
-        conn = www.Connection('github.com', secure=True, exceptions=True)
-        self.assertRaises(www.NotFound, lambda: conn.open('/404/'))
+

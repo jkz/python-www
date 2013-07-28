@@ -38,3 +38,5 @@ class Missing(Error):
     pass
 
 
+class MethodNotAllowed(Error):
+    pass
