@@ -139,6 +139,8 @@ class Resource:
     ...         kitten='fluffy').url
     'http://otherhost.net/foo?kitten=fluffy'
     """
+    Authority = Authority
+
     #XXX: A normalize method would be nice
     #TODO: encoding check
     def __init__(self,
@@ -165,7 +167,7 @@ class Resource:
         _scheme, netloc, self.path, _query_string, self.fragment = lib.urlsplit(url, True)
 
         # Create a netlocation object
-        self.authority = authority or Authority(netloc,
+        self.authority = authority or self.Authority(netloc,
                 scheme=_scheme or scheme, host=host, port=port)
 
         # Override path if explicitly passed

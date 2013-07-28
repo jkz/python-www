@@ -8,7 +8,9 @@ nested by fields.
 from . import exceptions
 
 class Schema:
-    #TODO immutable
+    #TODO make immutable? S.Lott says we should not attempt to do that
+
+
     def __add__(self, other):
         """Combine two schemas into a new one"""
         raise NotImplementedError

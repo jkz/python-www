@@ -39,4 +39,6 @@ class Missing(Error):
 
 
 class MethodNotAllowed(Error):
-    pass
+    code = 405
+
+

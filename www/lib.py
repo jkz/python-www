@@ -5,6 +5,12 @@ except ImportError:
     from urllib import urlencode, quote
     from urlparse import parse_qsl, urlsplit as _urlsplit, urlunsplit
 
+try:
+    from http import client as http
+except ImportError:
+    import httplib as http
+
+
 def urlsplit(url, auto_prefix=False):
     if (auto_prefix
     and not url.startswith('http://')
@@ -12,3 +18,4 @@ def urlsplit(url, auto_prefix=False):
     and not url.startswith('/')):
         url = '//' + url
     return _urlsplit(url)
+

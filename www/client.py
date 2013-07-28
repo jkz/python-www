@@ -129,16 +129,30 @@ class Authority(sexy.Authority):
         return self.prepare(*args, **kwargs).execute(format=format)
 
 
+'''
 for method in www.methods.ALL:
     def request(self, *args, **kwargs):
         kwargs['method'] = method
         return self.request(*args, **kwargs)
     request.__name__ = method.lower()
     setattr(Authority, method.lower(), request)
+'''
 
+
+def implement_methods(function, namespace):
+    """
+    Insert curried versions of given function with each method to a namespace
+    """
+    #namespace['open'] = lambda url, **kwargs: function(url=url, **kwargs)()
+    for method in methods.ALL:
+        namespace[method.lower()] = functools.partial(function, method=method)
+
+implement_methods(Authority.prepare, Authority.__dict__)
 
 
 class Resource(sexy.Resource):
+    Authority = Authority
+
     def stream(self, method='GET', body=None, headers=None, **kwargs):
         return Request(resource=self, method=method, body=body,
                 headers=headers).stream(**kwargs)
@@ -147,6 +161,10 @@ class Resource(sexy.Resource):
         return Request(resource=self, method=method, body=body,
                 headers=headers).fetch(**kwargs)
 
+
+def add_user_agent(request):
+    request.headers['User-Agent'] = request.headers.pop('User-Agent',
+            USER_AGENT)
 
 class Request(sexy.Request):
     prepared = False
@@ -160,21 +178,25 @@ class Request(sexy.Request):
         for processor in self.processors:
             processor(self)
 
+        add_user_agent(self)
+
     def split(self):
         self.prepare()
         return super().split()
 
     def stream(self, **kwargs):
-        return self.resource.connection.start(self, **kwargs)
+        return self.resource.authority.stream(*self.split(), **kwargs)
 
-    def fetch(self, **kwargs):
-        return self.resource.connection.fetch(*self.params())
+    def fetch(self):
+        return self.resource.authority.fetch(*self.split())
 
-    def __call__(self, format=None, **kwargs):
+    '''
+    def __call__(self, format=None):
         response = self.fetch(*self.params())
         if format:
             return response.parse(format)
         return response
+    '''
 
 
 class Response(sexy.Response):
