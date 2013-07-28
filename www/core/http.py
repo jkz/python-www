@@ -9,24 +9,8 @@ from www import lib
 from www.utils import structures
 from . import exceptions
 
-class Method:
-    def __init__(self, verb=None, allowed=methods.ALL):
-        self.allowed = allowed
-        self.verb = self.convert(verb)
 
-    def convert(self, verb):
-        if verb is not None:
-            verb = verb.upper()
-            if self.allowed is not None and verb not in self.allowed:
-                raise exceptions.MethodNotAllowed(verb)
-        return verb
-
-    def __set__(self, instance, verb):
-        self.verb = self.convert(verb)
-
-    def __get__(self, instance, owner):
-        return self.verb
-
+######## Containers
 
 class Meta(dict):
     pass
@@ -48,6 +32,83 @@ class Query(structures.MultiDict):
         else:
             return self.encoded()
 
+class Header(structures.MultiDict):
+    def __str__(self):
+        return '\n'.join('{}: {}'.format(key, ','.join(map(str, vals))) for key, vals in self.listvalues())
+
+
+class Body:
+    """
+    An interface to all kinds of request bodies.
+    """
+    def __init__(self, body=None, fileno=None):
+        if body:
+            self.body = body
+            '''
+            try:
+                self.body = body.decode('utf-8')
+            except AttributeError:
+                self.body = body
+            '''
+
+        elif fileno:
+            self.map = mmap.mmap(fileno(), 0, prot=mmap.PROT_READ)
+        else:
+            self.body = io.StringIO()
+
+    def read(self, size):
+        return self.body.read()
+
+    def readline(self):
+        return self.body.readline()
+
+    def readlines(self, hint):
+        if self.body:
+            return self.body.readlines(hint)
+
+        if self.map:
+            for line in iter(self.map.readline, hint):
+                yield line
+
+    def __iter__(self):
+        return self.body.__iter__()
+
+    def __str__(self):
+        return str(self.body)
+
+
+class ErrorStream:
+    def flush(self):
+        pass
+
+    def write(self, str):
+        pass
+
+    def writelines(self, seq):
+        pass
+
+
+######## Descriptors
+
+class Method:
+    def __init__(self, verb=None, allowed=methods.ALL):
+        self.allowed = allowed
+        self.verb = self.convert(verb)
+
+    def convert(self, verb):
+        if verb is not None:
+            verb = verb.upper()
+            if self.allowed is not None and verb not in self.allowed:
+                raise exceptions.MethodNotAllowed(verb)
+        return verb
+
+    def __set__(self, instance, verb):
+        self.verb = self.convert(verb)
+
+    def __get__(self, instance, owner):
+        return self.verb
+
+
 class Port:
     def __init__(self, port=None):
         self.port = port
@@ -63,6 +124,25 @@ class Port:
     def __set__(self, obj, val):
         self.port = int(val or 0) or None
 
+
+class Reason:
+    def __init__(self, reason=None):
+        self.reason = reason
+
+
+    def __get__(self, obj, cls):
+        #TODO make an actual reasons dict
+        if self.reason:
+            return self.reason
+        else:
+            return ' '.join(s for s in re.split(r'([A-Z][a-z]*)',
+                            cls.__name__) if s).upper()
+
+    def __set__(self, obj, val):
+        self.reason = val
+
+
+######## Classes
 
 class Authority:
     port = Port()
@@ -220,57 +300,11 @@ class Resource:
         return self.url
 
 
-class Header(structures.MultiDict):
-    def __str__(self):
-        return '\n'.join('{}: {}'.format(key, ','.join(map(str, vals))) for key, vals in self.listvalues())
-
-
-class Body:
-    """
-    An interface to all kinds of request bodies.
-    """
-    def __init__(self, body=None, fileno=None):
-        if body:
-            self.body = body
-        elif fileno:
-            self.map = mmap.mmap(fileno(), 0, prot=mmap.PROT_READ)
-        else:
-            self.body = io.StringIO()
-
-    def read(self, size):
-        return self.body.read()
-
-    def readline(self):
-        return self.body.readline()
-
-    def readlines(self, hint):
-        if self.body:
-            return self.body.readlines(hint)
-
-        if self.map:
-            for line in iter(self.map.readline, hint):
-                yield line
-
-    def __iter__(self):
-        return self.body.__iter__()
-
-    def __str__(self):
-        return str(self.body)
-
-
-class ErrorStream:
-    def flush(self):
-        pass
-
-    def write(self, str):
-        pass
-
-    def writelines(self, seq):
-        pass
-
 
 class Request(collections.UserDict):
     class Error(exceptions.Error): pass
+
+    Resource = Resource
 
     method = Method()
 
@@ -280,16 +314,14 @@ class Request(collections.UserDict):
             method = None,
             body = None,
             headers = None,
-            meta = None,
             resource = None,
             **kwargs
     ):
         # (. )( .)! Not all named arguments are passed to the Resource.
-        self.resource = resource or Resource(url, **kwargs)
+        self.resource = resource or self.Resource(url, **kwargs)
         self.method = method or 'GET'
         self.headers = Header(headers or {})
         self.body = body  #Body(body)
-        self.meta = Meta(meta or {})
 
         super().__init__()
 
@@ -300,18 +332,35 @@ class Request(collections.UserDict):
         headers = self.headers.copy()
         return (method, url, body, headers)
 
+
+    def __missing__(self, key):
+        raise exceptions.Missing(key)
+
     def __str__(self):
         return '{} {}'.format(self.method, self.resource)
 
 
 class Response:
+    #version = 'HTTP/1.1'
+    #def status(self):
+    #    return ' '.join((self.version, self.code, self.reason))
+    reason = Reason()
+
     def __init__(self,
-            status,
+            code,
             reason=None,
             headers=None,
             body=None,
     ):
-        self.status = status
+        self.code = code
         self.reason = reason
         self.headers = Header(headers or {})
         self.body = Body(body)
+
+    @property
+    def status(self):
+        return '{} {}'.format(self.code, self.reason)
+
+    def __str__(self):
+        return self.status
+

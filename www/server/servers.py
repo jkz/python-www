@@ -1,23 +1,29 @@
+import wsgiref
 import www
 
-from www.core.sexy import Request, Response
+from www.core import http
 
 class Server:
-    def __init__(self, host='localhost', port=8888):
+    def __init__(self, application, *args, **kwargs):
+        self.application = application
         self.host = host
         self.port = port
 
     def request(self, *args, **kwargs):
         kwargs['host'] = kwargs.pop('host', self.host)
         kwargs['port'] = kwargs.pop('port', self.port)
-        return Request(*args, **kwargs)
+        kwargs['authority'] self.
+        return http.Request(*args, **kwargs)
+
+    def response(self, request):
+        response_headers = [('Content-Type', 'text/plain'),
+                      ('Content-Length', str(len(body)))]
 
     def resolve(self, request):
-        response = Response(request)
+        response = http.Response(request)
         return ('{} {}'.format(response.code, response.reason),
                 str(response.header),
                 response.body)
-
 
     def application(self, *args, **kwargs):
        status, headers, body = self.resolve(self.request(*args, **kwargs))
@@ -28,9 +34,10 @@ class Server:
 
        return [body]
 
+    def response(self, status, headers, exc_info=None):
 
 
-import wsgiref
+
 
 class WSGIServer:
     def parse_cgi_environment(self, env):

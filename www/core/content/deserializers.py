@@ -1,9 +1,9 @@
-import www
+from www.core import Query
 import xml.dom.minidom as _xml
 import json as _json
 
 def form(raw):
-    return dict(www.parse_qsl(raw))
+    return Query(raw)
 
 def json(raw):
     return _json.loads(raw)

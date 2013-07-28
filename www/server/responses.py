@@ -1,59 +1,37 @@
-import re
-import collections
-
 from www.core import exceptions
+from www.core import http
 
-class Raisable(BaseException):
-    pass
+class Response(http.Response, exceptions.Raisable):
+    def write(self, data):
+        #TODO: guarantee that the passed-in string was either completely sent
+        # to the client, or that it is buffered for transmission while the
+        # application proceeds onward.
+        # http://www.python.org/dev/peps/pep-0333/#the-write-callable
+        self.body.write(data)
 
-class Error(Raisable, Exception):
-    pass
+    def __call__(self, status, headers):
+        """
+        Status is either of form
+            "<code> <reason>"
+        OR
+            <code>
 
-class Response(Raisable):
-    version = 'HTTP/1.1'
-    code = None
-    payload = None
-    headers = {}
+        Headers is a sequence of (key, value) pairs or a mapping.
+        """
+        #XXX: If a status is overwritten, but does not specify a reason, the
+        #     old reason could persist, which might be unwanted behaviour
+        if isinstance(status, str):
+            code, reason = status.split(' ', 2)
+            code = int(code)
+        elif status:
+            code = status
 
-    options = {}
+        self.headers.update(headers)
 
-    def __init__(self, request, code=None, payload=None, headers=None):
-        self.request = request
+        return self.write
 
-        if code:
-            self.code = code
-
-        if payload is not None:
-            self.payload = payload
-
-        headers = self.headers.copy()
-        self.headers = headers
-
-        # Update dynamic headers
-        for key, val in self.options.items():
-            if callable(val):
-                self[key] = val(request)
-            elif isinstance(val, str):
-                self[key] = val.format(**request)
-            else:
-                self[key] = val
-
-
-        if headers:
-            self.headers.update(headers)
-
-        request
-
-    def __str__(self):
-        return '{} {}'.format(self.code, self.reason())
-
-    def status(self):
-        return ' '.join((self.version, self.code, self.reason))
-
-    @property
-    def reason(self):
-        return ' '.join(s for s in re.split(r'([A-Z][a-z]*)', self.__class__.__name__) if s).upper()
-
+    #TODO dict interface
+    '''
     def __iter__(self):
         return self.headers.__iter__()
 
@@ -72,36 +50,7 @@ class Response(Raisable):
     @property
     def update(self):
         return self.headers.update
-
-class Response(Raisable):
-    code = None
-    payload = None
-    headers = {}
-    options = {}
-
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
-
-    def complete(self, request, payload=None, headers={}):
-        if payload is not None:
-            self.payload = payload
-
-        headers = self.headers.copy()
-        self.headers = headers
-
-        # Update dynamic headers
-        for key, val in self.options.items():
-            if callable(val):
-                self[key] = val(request)
-            elif isinstance(val, str):
-                self[key] = val.format(**request)
-            else:
-                self[key] = val
-
-        if headers:
-            self.headers.update(headers)
-
+    '''
 
 class Templated:
     template = ''

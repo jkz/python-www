@@ -126,3 +126,16 @@ def layer(options=(), guards=(), caches=()):
             pass
 
 
+class Middleware:
+    def __init__(self, application):
+        self.application = application
+
+    def envelope(self, code, headers):
+        pass
+
+    def resolve(self, request, envelope):
+        pass
+
+    def __call__(self, request, envelope):
+        self.resolve(request, envelope)
+        self.application(request, self.envelope)

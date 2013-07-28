@@ -167,6 +167,8 @@ def add_user_agent(request):
             USER_AGENT)
 
 class Request(sexy.Request):
+    Resource = Resource
+
     prepared = False
 
     def prepare(self):

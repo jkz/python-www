@@ -1,15 +1,18 @@
-# Error and Fault definitions from (I thought they were nice)
-# http://vikashazrati.wordpress.com/2008/10/30/fault-failure-error/
-class Info(Exception):
+class Raisable(BaseException):
     pass
 
-class Success(Info):
+class Info(Raisable):
+    pass
+
+class Success(Raisable):
     pass
 
 class Warning(Exception):
     """An advisory notification."""
     pass
 
+# Error and Fault definitions from (I thought they were nice)
+# http://vikashazrati.wordpress.com/2008/10/30/fault-failure-error/
 class Error(Warning):
     """
     A discrepancy between a computed, observed, or measured value or condition
