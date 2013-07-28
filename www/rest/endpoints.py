@@ -1,4 +1,5 @@
 from www.server.endpoints import Endpoint
+from www.server import responses
 
 from www.core.options import Options, Option
 from www.core.fields import String
@@ -13,7 +14,7 @@ class One(Endpoint):
     methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
 
     options = Options(
-        Option(
+        identifier = Option(
             as_kwarg = 'uid',
             field = String(
                 help_text = "A unique identifier without a slash",
@@ -21,6 +22,9 @@ class One(Endpoint):
             )
         )
     )
+    @property
+    def name(self):
+        return self.resource.name + '.one'
 
     def GET(self, request):
         "Return an identified entity"
@@ -43,7 +47,7 @@ class Few(Endpoint):
     methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
 
     options = Options(
-        Option(
+        identifier = Option(
             as_kwarg = 'uids',
             field = String(
                 help_text = "A list of identifiers without a slash",
@@ -51,6 +55,10 @@ class Few(Endpoint):
             )
         )
     )
+
+    @property
+    def name(self):
+        return self.resource.name + '.few'
 
     def GET(self, request):
         "Return the identified collection"
@@ -73,11 +81,16 @@ class Few(Endpoint):
 class All(Endpoint):
     methods = {'GET', 'POST', 'DELETE', 'PATCH'}
 
+    @property
+    def name(self):
+        return self.resource.name
+
     def POST(self, request):
         "Append a new entity or collection"
         uid = self.resource.create(request['data'])
         #TODO put the reverse/location function in the proper place
-        raise responses.Created(request, location=self.reverse(uid=uid))
+        location = request['router'].reverse(self.name + '.one', uid=uid)
+        raise responses.Created(request, location=location)
 
     def GET(self, request):
         "Return a filtered collection"

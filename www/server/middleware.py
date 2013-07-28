@@ -1,7 +1,5 @@
 import www
 
-from . import structures
-
 def to_tuple(thing):
     """
     Takes a dictionary, function or collection and turns it into a tuple
@@ -20,11 +18,14 @@ def to_tuple(thing):
     return to_tuple(thing)
 
 
-class Layer(structures.NestedClass, metaclass=structures.NestingMeta):
+class Middleware:
     """
-    Layers are parts of the www server stack. A request passes through a set
+    Middelwares are layers of the www server stack. A request passes through a set
     of layers, each one optionally enriching the request object, guarding
     passage, look for cache entries and returning a response.
+
+    This middleware is not compatible with wsgi, but models the principle with
+    a reqeust object as environ and envelope as start_response.
     """
     options = ()
     guards = ()
@@ -36,12 +37,13 @@ class Layer(structures.NestedClass, metaclass=structures.NestingMeta):
     def envelope(self, status, meta):
         return status, meta
 
-    def apply(self, request, envelope):
+    #TODO, think of envelope
+    def apply(self, request, envelope=None):
         """
         Return anything that a calling layer would like to see.
         To shortcut a response, raise an exception or Reponse.
         """
-        raise www.NotImplemented
+        return self.resolve(request)
 
     def _flatten(self, attr):
         for level in (
@@ -83,7 +85,7 @@ class Layer(structures.NestedClass, metaclass=structures.NestingMeta):
 
     def __call__(self, request, *args, **kwargs):
         #TODO if request:
-        if True:
+        if False:
             self.option(request)
             self.guard(request)
             self.cache(request)
@@ -112,12 +114,15 @@ def options(*args, **kwargs):
 
 def guards(*args, **kwargs):
     #TODO same as above
+    pass
 
 def caches(*args, **kwargs):
     #TODO same as above
+    pass
 
 def layer(options=(), guards=(), caches=()):
     def decorator(func):
         if isinstance(func, layers.Layer):
+            pass
 
 

@@ -50,7 +50,7 @@ class Option:
 
     def __init__(self, **conf):
         # First take out the options parameter, or create a new
-        self.options = conf.pop('options', copy(self.options))
+        self.options = conf.pop('options', copy.copy(self.options))
         self.order = conf.pop('order', self.order)
 
         # Add all attributes present in order to options
@@ -64,7 +64,7 @@ class Option:
                 self.options[key] = val
             # Add all other arguments as attributes
             else:
-            setattr(self, key, val)
+                setattr(self, key, val)
 
     def lookups_ordered(self):
         for container in self.order:

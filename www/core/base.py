@@ -257,15 +257,12 @@ class Request:
     """
     A full HTTP request that is fired when called.
     """
-    class Error(Error): pass
-
     def __init__(
             self,
             url = '',
             method = 'GET',
             body = None,
             headers = None,
-            mode = 'call',
             resource = None,
             data = None,
             processors = None,
@@ -273,12 +270,7 @@ class Request:
     ):
         self.resource = resource or Resource(url, **kwargs)
 
-        self.mode = mode
-        self.method = method.upper()
-        self.headers = headers or {}
-        self.body = body
-        self.data = data or {}
-
+        super().__init__(method=method, body=body, header=headers)
 
         # A processor is a callable that takes the request object
         # and knows the class. It changes the request object to make
@@ -301,6 +293,9 @@ class Request:
 
     @property
     def params(self):
+        """
+        Return a (url, method, body, headers) tuple
+        """
         self.prepare()
 
         method = self.method.upper()
@@ -316,10 +311,13 @@ class Request:
         return (method, url, body, headers)
 
     def stream(self, **kwargs):
-        return self.resource.connection.start(self, **kwargs)
+        return self.resource.connection.stream(self, **kwargs)
 
-    def __call__(self):
-        return self.resource.connection.fetch(*self.params)
+    def execute(self, **kwargs):
+        return self.resource.connection.fetch(*self.params, **kwargs)
+
+    def __call__(self, **kwargs):
+        return self.fetch(**kwargs)
 
     def __str__(self):
         return '{} {}'.format(self.method.upper(), self.resource)

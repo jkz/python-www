@@ -105,10 +105,10 @@ class Route:
                 routes.append((key, val))
             # Add url parts
             else:
-                parts[key] = val
+                self._parts[key] = val
 
         # Add the routes sorted by serial
-        for key, val in sorted(routes, key=lambda x: x[1]._serial)
+        for key, val in sorted(routes, key=lambda x: x[1]._serial):
             self.routes[key] = val
 
         self._compiled = re.compile(str(self))
@@ -116,7 +116,7 @@ class Route:
     def __getattr__(self, attr):
         # Expose nested routes as attributes by their name
         try:
-            return self._routes[attr]
+            return self.routes[attr]
         except KeyError:
             raise AttributeError
 
@@ -140,7 +140,7 @@ class Route:
             name, dot, rest = name.partition('.')
             path += getattr(self, name).reverse(rest, **kwargs)
         elif kwargs:
-            path = www.URL(path, query=kwargs)
+            path = www.Path(path, query=kwargs)
 
         # Return the total path from this part to the end
         return path

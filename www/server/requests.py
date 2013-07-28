@@ -1,42 +1,9 @@
+import collections
+
 from .headers import Header
 from . import exceptions
 
-def parse_cgi_environment(env):
-
-    meta = {}
-    headers = {}
-
-    for key in (
-        'DOCUMENT_ROOT',
-        #'HTTP_COOKIE',
-        #'HTTP_HOST',
-        #'HTTP_REFERER',
-        #'HTTP_USER_AGENT',
-        'HTTPS',
-        'PATH',
-        'QUERY_STRING',
-        'REMOTE_ADDR',
-        'REMOTE_HOST',
-        'REMOTE_PORT',
-        'REMOTE_USER',
-        'REQUEST_METHOD',
-        'REQUEST_URI',
-        'SCRIPT_FILENAME',
-        'SCRIPT_NAME',
-        'SERVER_ADMIN',
-        'SERVER_NAME',
-        'SERVER_PORT',
-        'SERVER_SOFTWARE',
-    ):
-        meta[key] = env.pop(key)
-
-    for key, val in env.items():
-        # Remove 'HTTP_' from keys, then lower and replace '_' by '-'
-        headers[key[5:].lower().replace('_', '-')] = val
-
-    return meta, headers
-
-class Request:
+class Request(Request, collections.UserDict):
     """
     This class is the request description, it contains all
     arguments and options, and is passed through all layers of the

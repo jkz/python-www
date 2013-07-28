@@ -1,5 +1,4 @@
 from www.core import Headers
-from www.core.content import deserialize
 
 class Connection:
     """
@@ -20,7 +19,7 @@ class Connection:
     auto_connect = True
     #auto_request = False
 
-    headers = {}
+    headers = {} #TODO use the proper class
 
     processors = []  #XXX care, this is a mutable class property
 
@@ -132,7 +131,7 @@ class Connection:
         # Return parsed if format is specified
         format = format or self.format
         if format:
-            return deserialize(response.utf8, format)
+            return response.parse(format)
 
         return response
 
@@ -152,7 +151,8 @@ class Connection:
         return Request(*args, **kwargs)
 
     def execute(self, *args, **kwargs):
-        return self.prepare(*args, **kwargs)()
+        format = kwargs.pop('format', None)
+        return self.prepare(*args, **kwargs).execute(format=format)
 
 
 for method in www.methods.ALL:

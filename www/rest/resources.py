@@ -16,6 +16,10 @@ A resource presents an interface which endpoints use:
 """
 
 class Resource:
+    @property
+    def name(self):
+        return self.__class__.__name__.lower() + 's'
+
     def identify(self, representation):
         "Should return identification values for given data"
         raise NotImplementedError

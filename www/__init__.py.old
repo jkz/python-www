@@ -13,7 +13,7 @@ Contents:
     Query
     Request
     Response
-    Client
+    Connection
     Stream
     Listener
 """
@@ -39,8 +39,7 @@ import time
 import socket
 import threading
 
-from .utils import structures
-from . import api
+from . import methods
 
 NAME = 'www'
 VERSION = '0.0.1'
@@ -62,37 +61,8 @@ for code, name in http.responses.items():
     globals()[name] = responses[code] = Status
 
 
-class Query(structures.MultiDict):
-    """
-    A class that represents a
-
-    Turns keyword arguments into a urlencoded querystring.
-
-    query -- a dictionary or sequence of pair tuples
-    verbatim -- turns off urlencoding when True
-    """
-    def __init__(self, query=(), verbatim=False, **kwargs):
-        if isinstance(query, str):
-            query = parse_qsl(query)
-
-        self.pairs = []
-        try:
-            self.pairs.extend(query.items())
-        except AttributeError:
-            self.pairs.extend(query)
-        self.pairs.extend(kwargs.items())
-        self.verbatim=False
-
-    def __str__(self, verbatim=None):
-        if self.verbatim:
-            return '&'.join(('='.join(map(str, p)) for p in pairs))
-        else:
-            return urlencode(pairs)
-
-
-
-
-def query_string(query=(), verbatim=False, **kwargs):
+#XXX this should be a function -.-
+class Query(str):
     """
     A querystring builder class.
 
@@ -101,16 +71,17 @@ def query_string(query=(), verbatim=False, **kwargs):
     query -- a dictionary or sequence of pair tuples
     verbatim -- turns off urlencoding when True
     """
-    pairs = []
-    try:
-        pairs.extend(query.items())
-    except AttributeError:
-        pairs.extend(query)
-    pairs.extend(kwargs.items())
-    if verbatim:
-        return '&'.join(('='.join(map(str, p)) for p in pairs))
-    else:
-        return urlencode(pairs)
+    def __new__(self, query=(), verbatim=False, **kwargs):
+        pairs = []
+        try:
+            pairs.extend(query.items())
+        except AttributeError:
+            pairs.extend(query)
+        pairs.extend(kwargs.items())
+        if verbatim:
+            return '&'.join(('='.join(map(str, p)) for p in pairs))
+        else:
+            return urlencode(pairs)
 
 
 class Resource:
@@ -162,7 +133,7 @@ class Resource:
 
             _host, _, _port = _netloc.partition(':')
 
-            self.connection = Client(
+            self.connection = Connection(
                 host     = host or _host or None,
                 port     = port or (_port and int(_port)) or None,
                 username = username or _username or None,
@@ -204,14 +175,14 @@ class Resource:
                 self.connection.netloc)
 
     @property
-    def path_parts(self):
+    def absolute_path_parts(self):
         return (self.path,
                 self.query_string,
                 self.fragment)
 
     @property
     def parts(self):
-        return self.host_parts + self.path_parts
+        return self.host_parts + self.absolute_path_parts
 
     @property
     def authority(self):
@@ -219,11 +190,11 @@ class Resource:
 
 
     @property
-    def path(self):
+    def absolute_path(self):
         """
-        Return absolute path, the url string without scheme and netloc parts
+        Return the url string without scheme and netloc parts
         """
-        return urlunsplit(('', '') + self.path_parts)
+        return urlunsplit(('', '') + self.absolute_path_parts)
 
     @property
     def url(self):
@@ -242,11 +213,17 @@ class Resource:
         return self.url
 
 
-def url(*args, **kwargs):
-    return Resource(*args, **kwargs).url
+#XXX this should be a function -.-
+class URL(str):
+    def __new__(self, *args, **kwargs):
+        return str.__new__(self, Resource(*args, **kwargs).url)
 
-def path(*args, **kwargs):
-    return Resource(*args, **kwargs).path
+
+#XXX this should be a function -.-
+class Path(str):
+    """The absolute path of the url contructed by given parameters"""
+    def __new__(self, *args, **kwargs):
+        return str.__new__(self, Resource(*args, **kwargs).absolute_path)
 
 
 def add_user_agent(request):
@@ -305,7 +282,7 @@ class Request:
 
         method = self.method.upper()
 
-        url = self.resource.path
+        url = self.resource.absolute_path
 
         if self.body is None and self.data and method in ('POST', 'PUT', 'PATCH'):
             body = Query(**self.data)
@@ -325,7 +302,7 @@ class Request:
         return '{} {}'.format(self.method.upper(), self.resource)
 
 
-class Client:
+class Connection:
     """
     Requires the inheritor to have a domain string field.
     """
@@ -605,7 +582,7 @@ class WriteListener(Listener):
             handle.write(data)
 
 
-class Stream(Client):
+class Stream(Connection):
     auto_connect = False
     timeout = 300.0
     retry_count = None
@@ -739,8 +716,23 @@ class Stream(Client):
         return data
 
 
+# Namespace api
+def implement_methods(function, namespace):
+    """
+    Adds `open` and lowercased versions of each method to the namespace,
+    to invoke request objects created by given function.
+    """
+    namespace['open'] = lambda url, **kwargs: function(url=url, **kwargs)()
+
+    for method in methods.ALL:
+        namespace[method.lower()] = functools.partial(namespace['open'], method=method)
+
+
 def create_request(url, **kwargs):
     return Request(url=url, **kwargs)
 
-api.implement_methods(create_request, globals())
+implement_methods(create_request, globals())
 
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

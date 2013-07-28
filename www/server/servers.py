@@ -1,28 +1,32 @@
 import www
 
+from www.core.sexy import Request, Response
+
 class Server:
     def __init__(self, host='localhost', port=8888):
         self.host = host
         self.port = port
 
     def request(self, *args, **kwargs):
-        return www.Request(*args, **kwargs)
+        kwargs['host'] = kwargs.pop('host', self.host)
+        kwargs['port'] = kwargs.pop('port', self.port)
+        return Request(*args, **kwargs)
 
     def resolve(self, request):
-        response = www.Response(request)
-        return ('{} {}'.format(response.code, response.reason)
-                str(response.header)
-                response.body
+        response = Response(request)
+        return ('{} {}'.format(response.code, response.reason),
+                str(response.header),
+                response.body)
 
 
     def application(self, *args, **kwargs):
        status, headers, body = self.resolve(self.request(*args, **kwargs))
        status = '200 OK'
        response_headers = [('Content-Type', 'text/plain'),
-                      ('Content-Length', str(len(response_body)))]
-       start_response(status, response_headers)
+                      ('Content-Length', str(len(body)))]
+       start_response(status, headers)
 
-       return [response_body]
+       return [body]
 
 
 

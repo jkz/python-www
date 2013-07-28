@@ -8,8 +8,9 @@ to make endpoints agnostic and resources pluggable.
 import www
 
 from www.server import responses
+from . import middleware
 
-class Endpoint(layers.Layer):
+class Endpoint(middleware.Middleware):
     # The methods that are allowed on this endpoint
     methods = www.methods.ALL
 
@@ -51,5 +52,10 @@ class Endpoint(layers.Layer):
             raise www.MethodNotAllowed
 
         return getattr(self, request['method'])(request)
+
+    def __repr__(self):
+        return 'endpoint {}.{}'.format(self.resource.__class__.__name__,
+                self.__class__.__name__)
+
 
 

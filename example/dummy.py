@@ -1,4 +1,6 @@
-from www.client.resources import Resource
+import copy
+
+from www.rest.resources import Resource
 
 class DB:
     def __init__(self):
