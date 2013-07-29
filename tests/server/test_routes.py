@@ -26,7 +26,7 @@ class TestRoute(unittest.TestCase):
         self.assertEqual(api.reverse('users.few', uids=(123, 456)),
                          '/api/users/123;456')
         self.assertEqual(api.reverse('users', uid=123),
-                         '/api?uid=123')
+                         '/api/users?uid=123')
 
 
         self.assertEqual(api.resolve('/api'),

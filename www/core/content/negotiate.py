@@ -1,6 +1,6 @@
 import www
 
-from www.utils import cached_property
+from www.utils.decorators import cached_property
 
 from .. import exceptions
 

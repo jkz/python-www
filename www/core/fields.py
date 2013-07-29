@@ -106,11 +106,11 @@ class Field:
     def validate(self, value):
         if value in self.nulls:
             if not self.nullable:
-                raise exceptions.ValidationError('Not nullable')
+                raise exceptions.Invalid('Not nullable')
             return
 
         if self.choices and not value in self.choices:
-            raise exceptions.ValidationError('{} not in {}'.format(value,
+            raise exceptions.Invalid('{} not in {}'.format(value,
                     self.choices))
 
         validators.run_validators(self.validators, value)
@@ -302,7 +302,7 @@ class Object(Field):
 
     def revert(self, value):
         if self.schema:
-            return self.schema.revert(value)
+            return self.schema.resolve(value)
         return value
 
     def meta(self):

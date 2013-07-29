@@ -1,3 +1,8 @@
+"""
+www Middleware is an extension of the wsgi protocol. The environ and
+start_response parameters are modeled by request and response.
+"""
+
 import www
 
 def to_tuple(thing):
@@ -127,8 +132,11 @@ def layer(options=(), guards=(), caches=()):
 
 
 class Middleware:
-    def __init__(self, application):
+    def __init__(self, application, options=None, guards=None, caches=None):
         self.application = application
+        self.options += options
+        self.guards += guards
+        self.caches += caches
 
     def envelope(self, code, headers):
         pass
@@ -136,6 +144,7 @@ class Middleware:
     def resolve(self, request, envelope):
         pass
 
-    def __call__(self, request, envelope):
+    def __call__(self, request, response):
         self.resolve(request, envelope)
-        self.application(request, self.envelope)
+        self.application(request, response)
+

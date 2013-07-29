@@ -7,7 +7,7 @@ class Info(Raisable):
 class Success(Raisable):
     pass
 
-class Warning(Exception):
+class Warning(Exception, Raisable):
     """An advisory notification."""
     pass
 

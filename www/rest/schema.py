@@ -46,13 +46,11 @@ def collection(api, resource):
             ),
             next = f.String(required=False, writable=False),
             prev = f.String(required=False, writable=False),
-            count = f.Integer(writable=False),
-        )
             count = f.Integer(
                 writable = False,
                 revert = lambda self, value: resource.count(value),
             )
+        )
     )
-)
 
 

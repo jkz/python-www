@@ -1,8 +1,8 @@
-import www
 import xml.dom.minidom as _xml
 import json as _json
 
-from . import exceptions
+import www
+from www.core import exceptions
 
 def text(data):
     return str(data)

@@ -1,3 +1,5 @@
+from www.core import options
+
 class Query(Extractor):
     def extract(self, request):
         return request.query[self.param]
@@ -65,7 +67,6 @@ class RequestOption(Option):
                 if key.startswith('as_')}
         super().__init__(**kwargs)
 
-    def
 
 def get_ip(request):
     """Extract the caller's IP"""
@@ -75,4 +76,9 @@ def get_ip(request):
     else:
         ip = request.meta.get('REMOTE_ADDR')
     return ip
+
+
+class Options(options.Options):
+    def resolve(self, request):
+        pass
 

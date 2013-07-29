@@ -1,6 +1,7 @@
 import mmap
 import collections
 import io
+import re
 
 import www
 
@@ -34,7 +35,8 @@ class Query(structures.MultiDict):
 
 class Header(structures.MultiDict):
     def __str__(self):
-        return '\n'.join('{}: {}'.format(key, ','.join(map(str, vals))) for key, vals in self.listvalues())
+        return '\n'.join('{}: {}'.format(key, ','.join(map(str, vals))) for
+                key, vals in sorted(self.listvalues()))
 
 
 class Body:
@@ -43,7 +45,10 @@ class Body:
     """
     def __init__(self, body=None, fileno=None):
         if body:
-            self.body = body
+            if isinstance(body, str):
+                self.body = [body]
+            else:
+                self.body = body
             '''
             try:
                 self.body = body.decode('utf-8')
@@ -134,6 +139,8 @@ class Reason:
         #TODO make an actual reasons dict
         if self.reason:
             return self.reason
+        elif obj:
+            return lib.http.responses[obj.code]
         else:
             return ' '.join(s for s in re.split(r'([A-Z][a-z]*)',
                             cls.__name__) if s).upper()
@@ -283,7 +290,7 @@ class Resource:
                 self.query_string, self.fragment)
 
     @property
-    def identifier(self):
+    def absolute(self):
         """
         Return absolute path, the url string without scheme and netloc parts
         """
@@ -347,10 +354,10 @@ class Response:
     reason = Reason()
 
     def __init__(self,
-            code,
+            body=None,
+            code=200,
             reason=None,
             headers=None,
-            body=None,
     ):
         self.code = code
         self.reason = reason

@@ -4,15 +4,8 @@ USER_AGENT = '{}/{}'.format(NAME, VERSION)
 
 #from . import methods
 from .core.exceptions import *
-from .core.sexy import (
+from .core.http import (
         Meta,
-        Query,
-        Header,
-        Body,
-        Request,
-        Response
-)
-from . import (
         Query,
         Header,
         Body,

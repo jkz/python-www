@@ -15,9 +15,9 @@ The mapping scheme is a bijection:
     reverse maps names + kwargs to urls
 """
 import collections
-
-import www
 import re
+
+from www import shortcuts
 
 #XXX Needs test coverage
 #XXX Needs fields
@@ -140,7 +140,7 @@ class Route:
             name, dot, rest = name.partition('.')
             path += getattr(self, name).reverse(rest, **kwargs)
         elif kwargs:
-            path = www.Path(path, query=kwargs)
+            path = shortcuts.absolute(path, query=kwargs)
 
         # Return the total path from this part to the end
         return path

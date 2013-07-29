@@ -6,7 +6,7 @@ from www.core import fields
 from www.core import options
 from www.core import schema
 
-E = exceptions.ValidationError
+E = exceptions.Invalid
 v = validators
 
 class Option(options.Option):
@@ -55,10 +55,10 @@ class TestField(unittest.TestCase):
             default = 50,
         )
 
-        self.assertEqual(field.parse('10'), 10)
-        self.assertEqual(field.parse('100'), 100)
-        self.assertRaises(exceptions.ValidationError, field.parse, '9')
-        self.assertRaises(exceptions.ValidationError, field.parse, '101')
+        self.assertEqual(field.resolve('10'), 10)
+        self.assertEqual(field.resolve('100'), 100)
+        self.assertRaises(exceptions.Invalid, field.resolve, '9')
+        self.assertRaises(exceptions.Invalid, field.resolve, '101')
 
     def test_alias(self):
         as_str = fields.Boolean(
@@ -94,8 +94,8 @@ class TestField(unittest.TestCase):
             choices = ['a', 'b', 'c'],
         )
 
-        self.assertEqual(field.parse('a'), 'a')
-        self.assertRaises(E, field.parse, 'd')
+        self.assertEqual(field.resolve('a'), 'a')
+        self.assertRaises(E, field.resolve, 'd')
 
     def test_default(self):
         field = fields.String(
@@ -122,14 +122,14 @@ class TestField(unittest.TestCase):
         nulls = (None, (), [], {}, '', set())
 
         for null in nulls:
-            self.assertEqual(nullable.parse(null), None)
+            self.assertEqual(nullable.resolve(null), None)
 
         notnullable = fields.Field(
             nullable = False,
         )
 
         for null in nulls:
-            self.assertRaises(E, notnullable.parse, null)
+            self.assertRaises(E, notnullable.resolve, null)
 
     def test_meta(self):
         pass
@@ -150,11 +150,11 @@ class TestOption(unittest.TestCase):
 
 
         obj = TestObject()
-        self.assertEqual(option.parse(obj), 'DEFAULT')
+        self.assertEqual(option.resolve(obj), 'DEFAULT')
         obj.attr = 'ATTR'
-        self.assertEqual(option.parse(obj), 'ATTR')
+        self.assertEqual(option.resolve(obj), 'ATTR')
         obj.dict['key'] = 'KEY'
-        self.assertEqual(option.parse(obj), 'KEY')
+        self.assertEqual(option.resolve(obj), 'KEY')
 
 class Href(fields.Field):
     writable = False
@@ -214,18 +214,18 @@ class SchemaTestCase(unittest.TestCase):
             'text': 'Tricksed us?!',
         }
 
-        print(person.convert(sam))
-        print(person.convert(frodo))
-        print(person.convert(smeagol))
+        print(person.resolve(sam))
+        print(person.resolve(frodo))
+        print(person.resolve(smeagol))
 
-        print(person.revert(sam))
-        print(person.revert(frodo))
-        print(person.revert(smeagol))
+        print(person.reverse(sam))
+        print(person.reverse(frodo))
+        print(person.reverse(smeagol))
 
-        print(quote.convert(sorry))
-        print(quote.convert(tricksed))
+        print(quote.resolve(sorry))
+        print(quote.resolve(tricksed))
 
-        print(quote.revert(sorry))
-        print(quote.revert(tricksed))
+        print(quote.reverse(sorry))
+        print(quote.reverse(tricksed))
 
 

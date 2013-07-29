@@ -10,17 +10,11 @@ class Server:
         self.port = port
 
     def request(self, *args, **kwargs):
-        kwargs['host'] = kwargs.pop('host', self.host)
-        kwargs['port'] = kwargs.pop('port', self.port)
-        kwargs['authority'] self.
+        kwargs['authority'] = self
         return http.Request(*args, **kwargs)
 
-    def response(self, request):
-        response_headers = [('Content-Type', 'text/plain'),
-                      ('Content-Length', str(len(body)))]
-
-    def resolve(self, request):
-        response = http.Response(request)
+    def resolve(self, request, response):
+        response = http.Response()
         return ('{} {}'.format(response.code, response.reason),
                 str(response.header),
                 response.body)
@@ -29,21 +23,31 @@ class Server:
        status, headers, body = self.resolve(self.request(*args, **kwargs))
        status = '200 OK'
        response_headers = [('Content-Type', 'text/plain'),
-                      ('Content-Length', str(len(body)))]
+                           ('Content-Length', str(len(body)))]
        start_response(status, headers)
+
+
 
        return [body]
 
-    def response(self, status, headers, exc_info=None):
-
-
-
 
 class WSGIServer:
-    def parse_cgi_environment(self, env):
-
+    def request(self, env):
         meta = {}
         headers = {}
+
+        url = wsgiref.util.request_uri(env)
+
+        method = env['REQUEST_METHOD']
+
+        headers['content-length'] = env.pop('CONTENT_LENGTH')
+        headers['content-type'] = env.pop('CONTENT_TYPE')
+
+        body = env.pop('wsgi.input')
+
+        request = http.Request(url, method=method, body=body, headers=headers)
+
+                )
 
         for key in (
             'DOCUMENT_ROOT',
@@ -67,7 +71,9 @@ class WSGIServer:
             'SERVER_PORT',
             'SERVER_SOFTWARE',
         ):
-            meta[key] = env.pop(key)
+        for key, val in env.items():
+
+            headers[key] =
 
         for key, val in env.items():
             # Remove 'HTTP_' from keys, then lower and replace '_' by '-'

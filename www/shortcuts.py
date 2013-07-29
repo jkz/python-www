@@ -1,16 +1,16 @@
-from www import client
-from www import core
+from www.client import client
+from www.core import http
 
 def url(*args, **kwargs):
-    return core.Resource(*args, **kwargs).url
+    return http.Resource(*args, **kwargs).url
 
-def path(*args, **kwargs):
-    return core.Resource(*args, **kwargs).path
+def absolute(*args, **kwargs):
+    return http.Resource(*args, **kwargs).absolute
 
 def query_string(*args, **kwargs):
-    return str(core.Query(*args, **kwargs))
+    return str(http.Query(*args, **kwargs))
 
 def request(url, **kwargs):
     return client.Request(url, **kwargs).fetch()
 
-implement_methods(request, globals())
+client.implement_methods(request, globals())

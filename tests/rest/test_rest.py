@@ -1,8 +1,7 @@
 import unittest
 
 from www.core import fields
-
-from www.rest import schema
+from www.core import schema
 
 class Href(fields.Field):
     writable = False
@@ -42,11 +41,11 @@ class SchemaTestCase(unittest.TestCase):
             'friends': [sam, frodo],
         }
 
-        print(extra.input(sam))
-        print(extra.input(frodo))
-        print(extra.input(smeagol))
+        print(extra.reverse(sam))
+        print(extra.reverse(frodo))
+        print(extra.reverse(smeagol))
 
-        print(extra.output(sam))
-        print(extra.output(frodo))
-        print(extra.output(smeagol))
+        print(extra.resolve(sam))
+        print(extra.resolve(frodo))
+        print(extra.resolve(smeagol))
 

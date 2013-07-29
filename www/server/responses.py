@@ -9,7 +9,7 @@ class Response(http.Response, exceptions.Raisable):
         # http://www.python.org/dev/peps/pep-0333/#the-write-callable
         self.body.write(data)
 
-    def __call__(self, status, headers):
+    def __call__(self, status=None, headers=None, exc_info=None):
         """
         Status is either of form
             "<code> <reason>"
@@ -18,6 +18,15 @@ class Response(http.Response, exceptions.Raisable):
 
         Headers is a sequence of (key, value) pairs or a mapping.
         """
+        if exc_info:
+            try:
+                raise exc_info[0].with_traceback(exc_info[1], exc_info[2])
+            except Response as response:
+                pass
+            except exceptions.Raisable as exception:
+                pass
+
+
         #XXX: If a status is overwritten, but does not specify a reason, the
         #     old reason could persist, which might be unwanted behaviour
         if isinstance(status, str):

@@ -75,7 +75,7 @@ class Object(dict, Schema):
         output = {}
         for name, field in self.readables():
             key = field.accessor(name)
-            value = self.field.extract(data, key)
+            value = field.extract(data, key)
             try:
                 output[name] = field.reverse(value)
             except exceptions.Omitted:
@@ -121,7 +121,7 @@ class Tuple(tuple, Schema):
         output = []
         for index, field in enumerate(self.readables()):
             key = field.accessor(index)
-            value = self.field.extract(data, key)
+            value = field.extract(data, key)
             try:
                 output.append(field.reverse(value))
             except exceptions.Omitted:

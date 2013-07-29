@@ -15,7 +15,7 @@ class Validator:
     def __call__(self, input):
         key = self.key(input)
         if self.cmp(key, self.value):
-            raise exceptions.ValidationError(
+            raise exceptions.Invalid(
                     self.message.format(value=self.value, input=input, key=key))
 
 class Min(Validator):
@@ -47,9 +47,9 @@ def run_validators(validators, value):
     for validator in validators:
         try:
             validator(value)
-        except exceptions.ValidationError as e:
+        except exceptions.Invalid as e:
             messages.append(str(e))  #TODO: proper error messages
 
     if messages:
-        raise exceptions.ValidationError(messages)
+        raise exceptions.Invalid(messages)
 

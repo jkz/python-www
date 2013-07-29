@@ -1,12 +1,12 @@
+import functools
 import mmap
 
 from www import methods
-from www import api
-from www.core import sexy
+from www.core import http
 from www.core import content
 from www.utils.decorators import lazy_property
 
-class Authority(sexy.Authority):
+class Authority(http.Authority):
     """
     Requires the inheritor to have a domain string field.
     """
@@ -139,18 +139,23 @@ for method in www.methods.ALL:
 '''
 
 
-def implement_methods(function, namespace):
+def implement_methods(function, namespace, attr=False):
     """
     Insert curried versions of given function with each method to a namespace
     """
     #namespace['open'] = lambda url, **kwargs: function(url=url, **kwargs)()
     for method in methods.ALL:
-        namespace[method.lower()] = functools.partial(function, method=method)
+        name = method.lower()
+        partial = functools.partial(function, method=method)
+        if attr:
+            setattr(namespace, name, partial)
+        else:
+            namespace[name] = method
 
-implement_methods(Authority.prepare, Authority.__dict__)
+implement_methods(Authority.prepare, Authority, True)
 
 
-class Resource(sexy.Resource):
+class Resource(http.Resource):
     Authority = Authority
 
     def stream(self, method='GET', body=None, headers=None, **kwargs):
@@ -166,7 +171,7 @@ def add_user_agent(request):
     request.headers['User-Agent'] = request.headers.pop('User-Agent',
             USER_AGENT)
 
-class Request(sexy.Request):
+class Request(http.Request):
     Resource = Resource
 
     prepared = False
@@ -201,7 +206,7 @@ class Request(sexy.Request):
     '''
 
 
-class Response(sexy.Response):
+class Response(http.Response):
     """
     Response from a callm request.
     Can represent data in different formats by calling the corresponding
@@ -212,8 +217,8 @@ class Response(sexy.Response):
     #TODO: Encoding is not yet handled properly
     #TODO: return format equal to MIME-TYPE header
     #TODO: Handlers, like redirect, proxy etc
-    class Error(Error): pass
-    class ParseError(Error): pass
+    #class Error(Error): pass
+    #class ParseError(Error): pass
 
     def __init__(self, response, streaming=False, exceptions=False,
             redirects=False):
@@ -272,3 +277,25 @@ class Response(sexy.Response):
             type = self.headers['Content-Type']
         return content.deserialize(self.raw, type)
 
+'''
+class Pool:
+    """
+    This attribute allows
+    """
+    _pool = {}
+
+    def __get__(self, obj, cls):
+        return self._pool[obj.netloc] or None
+
+    def __set__(self, obj, val):
+        self._pool[obj.netloc] = val
+
+
+class Http(Connection):
+    connection = Pool()
+
+
+class Https(Connection):
+    connection = Pool()
+    secure = True
+'''
