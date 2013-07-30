@@ -6,7 +6,7 @@ from www.server import guards
 
 class Throttle(guards.Guard):
     """
-    Throttler is the Keeper of the Bandwith.
+    Throttler is the Keeper of the Bandwidth.
     He manages rate limits of users. And replenishes shares of those
     in fixed intervals.
     """

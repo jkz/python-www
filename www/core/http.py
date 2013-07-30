@@ -325,7 +325,7 @@ class Request(collections.UserDict):
             **kwargs
     ):
         # (. )( .)! Not all named arguments are passed to the Resource.
-        self.resource = resource or self.Resource(url, **kwargs)
+        self.url = resource or self.Resource(url, **kwargs)
         self.method = method or 'GET'
         self.headers = Header(headers or {})
         self.body = body  #Body(body)
@@ -334,7 +334,7 @@ class Request(collections.UserDict):
 
     def split(self):
         method = self.method
-        url = self.resource.identifier
+        url = self.url.identifier
         body = self.body
         headers = self.headers.copy()
         return (method, url, body, headers)
@@ -358,10 +358,12 @@ class Response:
             code=200,
             reason=None,
             headers=None,
+            **kwarg_headers
     ):
         self.code = code
         self.reason = reason
         self.headers = Header(headers or {})
+        self.headers.update(kwarg_headers)
         self.body = Body(body)
 
     @property

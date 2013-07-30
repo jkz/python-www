@@ -48,6 +48,12 @@ class Language(Negotiator):
 
     help_text = "The response data language"
 
+negotiate = Stack(
+    Accept,
+    Language,
+    ContentType,
+)
+
 
 class Deserialize(Middleware):
     def resolve(self, request, response):

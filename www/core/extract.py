@@ -8,6 +8,9 @@ class Extractor:
         self.param = param
         self.__dict__.update(options)
 
+    def convert(self, value):
+        return value
+
     def __call__(self, data):
         try:
             return self.extract(data)

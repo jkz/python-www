@@ -1,150 +1,85 @@
-"""
-www Middleware is an extension of the wsgi protocol. The environ and
-start_response parameters are modeled by request and response.
-"""
-
-import www
-
-def to_tuple(thing):
-    """
-    Takes a dictionary, function or collection and turns it into a tuple
-    """
-    try:
-        thing = thing.items()
-    except AttributeError:
-        try:
-            thing = thing()
-        except TypeError:
-            thing = tuple(thing)
-
-    if isinstance(thing, tuple):
-        return thing
-
-    return to_tuple(thing)
-
-
 class Middleware:
-    """
-    Middelwares are layers of the www server stack. A request passes through a set
-    of layers, each one optionally enriching the request object, guarding
-    passage, look for cache entries and returning a response.
-
-    This middleware is not compatible with wsgi, but models the principle with
-    a reqeust object as environ and envelope as start_response.
-    """
-    options = ()
-    guards = ()
-    caches = ()
-
     def __init__(self, app):
         self.app = app
 
-    def envelope(self, status, meta):
-        return status, meta
-
-    #TODO, think of envelope
-    def apply(self, request, envelope=None):
-        """
-        Return anything that a calling layer would like to see.
-        To shortcut a response, raise an exception or Reponse.
-        """
-        return self.resolve(request)
-
-    def _flatten(self, attr):
-        for level in (
-                getattr(self, 'default_' + attr),
-                getattr(self, attr),
-                getattr(self, 'extra_' + attr)):
-            for el in to_tuple(level):
-                yield el
-
-    def option(self, request):
-        """Update the request object with parsed options"""
-        for o in self._flatten('options'):
-            if callable(o):
-                o(request)
-                continue
-
-            name, pairs = o
-
-            if callable(pairs):
-                request[name] = pairs(request, self)
-                continue
-
-            try:
-                default = (getattr(self, name),)
-            except AttributeError:
-                default = ()
-
-            request[name] = request.setdefault(name, *(tuple(pairs) + default))
-
-    def guard(self, request):
-        """Run all conditional rejection checks"""
-        for g in self._flatten('guards'):
-            g(request)
-
-    def cache(self, request):
-        """Look for available data in caches and raise any yielded responses"""
-        for c in self._flatten('caches'):
-            c(request)
-
-    def __call__(self, request, *args, **kwargs):
-        #TODO if request:
-        if False:
-            self.option(request)
-            self.guard(request)
-            self.cache(request)
-        return self.apply(request, *args, **kwargs)
+    def __call__(self, request):
+        return self.app(request)
 
 
-#XXX This is dark magic. Might not be in line with the filosophy
-#TODO set options? append options? udpate options?
-def options(*args, **kwargs):
-    options = layers.to_tuple(kwargs) + args
-    def decorator(func):
-        # Set the options of a layer
-        if isinstance(func, layers.Layer):
-            func.options = options
-            return func
+class Stack:
+    """
+    Take any amount of middleware and return it as a single one.
+    """
+    def __init__(self, *apps):
+        self.apps = apps
 
-        # Turn the function into a layer and set the options
-        class Layer(layers.Layer):
-            options = layers.to_tuple(kwargs) + args
-
-            def call(self, *args, **kwargs):
-                return func(*args, **kwargs)
-        #XXX Some extra work to make the class look more like the function
-        #    would be nice.
-        return Layer()
-
-def guards(*args, **kwargs):
-    #TODO same as above
-    pass
-
-def caches(*args, **kwargs):
-    #TODO same as above
-    pass
-
-def layer(options=(), guards=(), caches=()):
-    def decorator(func):
-        if isinstance(func, layers.Layer):
-            pass
+    def __call__(self, app):
+        for wrap in reversed(self.apps):
+            app = wrap(app)
+        return app
 
 
-class Middleware:
-    def __init__(self, application, options=None, guards=None, caches=None):
-        self.application = application
-        self.options += options
-        self.guards += guards
-        self.caches += caches
+class Cache(Middleware):
+    """
+    Checks if valid data is available in a temporary storage backend.
+    This should wrap an application and its resolve method should return
+    a response in a format that is expected from the wrapped application.
+    """
+    def key(self, request):
+        return request.split()
 
-    def envelope(self, code, headers):
+    def get(self, key):
         pass
 
-    def resolve(self, request, envelope):
+    def set(self, key, val):
         pass
 
-    def __call__(self, request, response):
-        self.resolve(request, envelope)
-        self.application(request, response)
+    def delete(self, key):
+        pass
+
+    def cachable(self, request):
+        return False
+
+    def __call__(self, request):
+        # If cache has a valid entry, return it
+        cached = self.get(self.key(request))
+        if cached:
+            return cached
+
+        # Get a fresh response
+        response = self.app(request)
+
+        # Cache the fresh response if the request is cachable
+        if self.cachable(request)
+            self.set(self.key(request), response)
+
+        return response
+
+
+class Guard(Middleware):
+    """
+    Raises responses (to bypass non-exceptionhandled middlewares)
+    if a request does not pass the guard. Else returns the application's
+    response.
+    """
+    def resolve(self, request):
+        pass
+
+    def __call__(self, request):
+        try:
+            raise self.resolve(request):
+        except TypeError:
+            return self.app(request)
+
+
+class Option(Middleware):
+    """
+    Enriches the request object.
+    """
+    def resolve(self, request):
+        pass
+
+    def __call__(self, request):
+        self.resolve(request)
+        return self.app(request)
 

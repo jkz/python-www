@@ -68,11 +68,11 @@ class Templated:
     def payload(self):
         return template.format(**self.request)
 
-class Information(Response):
+class Information(Response, exceptions.Info):
     "code = 1xx"
 
 
-class Success(Response):
+class Success(Response, exceptions.Success):
     "code = 2xx"
 
 class Ok(Success):
@@ -99,7 +99,7 @@ class NoContent(Success):
 
 
 
-class Redirect(Response):
+class Redirect(Response, exceptions.Warning):
     "code = 3xx"
 
     options = {
@@ -129,7 +129,7 @@ class TemporaryRedirect(Redirect, Templated):
 
 
 
-class ClientError(Response):
+class ClientError(Response, exceptions.Error):
     "code = 4xx"
 
 class BadRequest(ClientError):
@@ -170,7 +170,7 @@ class TooManyRequests(ClientError):
     payload = "Too many requests, please slow down."
 
 
-class ServerError(Response):
+class ServerError(Response, exceptions.Fault):
     "code = 5xx"
 
 class InternalServerError(ServerError):

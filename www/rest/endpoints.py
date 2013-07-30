@@ -9,6 +9,9 @@ class Endpoint(Endpoint):
     def envelope(self, status, meta):
         return lambda body: {'code': status, 'meta': meta, 'data': body}
 
+    @property
+    def schemas(self):
+        return self.resource.schemas
 
 class One(Endpoint):
     methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
@@ -22,6 +25,11 @@ class One(Endpoint):
             )
         )
     )
+
+    @property
+    def schemas(self):
+        return self.resource.schemas['entity']
+
     @property
     def name(self):
         return self.resource.name + '.one'
@@ -57,6 +65,10 @@ class Few(Endpoint):
     )
 
     @property
+    def schemas(self):
+        return self.resource.schemas['entity']
+
+    @property
     def name(self):
         return self.resource.name + '.few'
 
@@ -80,6 +92,10 @@ class Few(Endpoint):
 
 class All(Endpoint):
     methods = {'GET', 'POST', 'DELETE', 'PATCH'}
+
+    @property
+    def schemas(self):
+        return self.resource.schemas['collection']
 
     @property
     def name(self):

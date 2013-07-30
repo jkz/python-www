@@ -51,6 +51,50 @@ def application(app):
         return list(response.body)
     return func
 
+class Application:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        request = parse(environ)
+        response = app(request)
+        start_response(response.status, response.headers)
+        return list(response.body)
+
+class Server:
+    def __init__(self, authority, app):
+        self.authority = authority
+        self.app = app
+
+    @application
+    def application(self, request):
+        """Compatible with both www and wsgi applications"""
+        request.authority = self.authority
+        return self.app(request)
+
+
+    def serve(self, forever=True):
+        server = wsgiref.make_server(self.authority.host, self.authority.port,
+                self.application)
+        if forever:
+            server.serve_forever()
+        else:
+            server.handle_request()
+
+    def forever(self):
+        return self.serve(forever=True)
+
+    def once(self):
+        return self.serve(forever=False)
+
+
+def server(host, port, app):
+    authority = http.Authority(host=host, port=port)
+    return Server(authority=authority, app=app)
+
+def serve(host, port, app, forever=True):
+    server(host, port, app).serve(forever)
+
 def setup_environ(**kwargs):
     """
     Create a default wsgi environment, for testing purposes.

@@ -35,7 +35,7 @@ class MinLength(Min, Length):
     message = "Can't be shorter than {value}, (of {input} is {key})"
 
 class MaxLength(Max, Length):
-    message = "Can't be longer that {value}, (of {input} is {key})"
+    message = "Can't be longer than {value}, ({input} is {key})"
 
 class Regex(Validator):
     message = "Does not match pattern"

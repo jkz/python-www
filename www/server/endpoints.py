@@ -51,6 +51,8 @@ class Endpoint(middleware.Middleware):
         if not request['method'] in self.methods:
             raise www.MethodNotAllowed
 
+        request['endpoint'] = self
+
         return getattr(self, request['method'])(request)
 
     def __repr__(self):
