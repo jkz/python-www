@@ -2,7 +2,7 @@ import functools
 import mmap
 
 from www import methods
-from www import content
+from www.content import deserialize
 from www.core import http
 from www.utils.decorators import lazy_property
 
@@ -275,7 +275,7 @@ class Response(http.Response):
         """Do something smart to the data to discover its type"""
         if not type:
             type = self.headers['Content-Type']
-        return content.deserialize(self.raw, type)
+        return deserialize(self.raw, type)
 
 '''
 class Pool:

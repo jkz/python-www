@@ -1,6 +1,6 @@
 import sys
 
-import www
+from www.core import exceptions
 
 class InterfaceClassAttribute(object):
     """
@@ -33,7 +33,7 @@ class InterfaceClassAttribute(object):
         self.classes[obj.__class__] = val
 
 
-class Error(www.Error):
+class Error(exceptions.Error):
     pass
 
 class Auth(object):

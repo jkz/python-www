@@ -14,6 +14,7 @@ A resource presents an interface which endpoints use:
     bulk_delete() / drop()
     bulk_update(patch) / batch(patch)
 """
+from . import schema
 
 class Resource:
     @property

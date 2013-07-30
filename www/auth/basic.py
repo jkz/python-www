@@ -1,15 +1,15 @@
 import functools
 import base64
 
-import www
-import www.auth
+from www.core import http
 
-class Error(www.auth.Error):
+from . import Error, Auth, Consumer, Token, Service
+
+class Error(Error):
     pass
 
 
-
-class Auth(www.auth.Auth):
+class Auth(Auth):
     def encode_pair(self, username, password):
         pair = '{}:{}'.format(username, password).encode(self.encoding)
         b64pair = base64.b64encode(pair)
@@ -37,13 +37,13 @@ class Auth(www.auth.Auth):
             request.headers['Authorization'] = self.encode_pair(
                     self.token.username, self.token.password)
 
-class Service(www.auth.Service):
+class Service(Service):
     pass
 
 
-class Consumer(www.auth.Consumer): pass
+class Consumer(Consumer): pass
 
-class Token(www.auth.Token):
+class Token(Token):
     def __init__(self, username, password):
         self.username = username
         self.password = password
@@ -51,7 +51,7 @@ class Token(www.auth.Token):
 
 def create_request(*args, **kwargs):
     token = Token(kwargs.pop('username'), kwargs.pop('password'))
-    request = www.Request(*args, **kwargs)
+    request = http.Request(*args, **kwargs)
     auth = Auth(token=token)
     request.processors.append(auth)
     return request
