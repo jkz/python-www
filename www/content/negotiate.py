@@ -1,49 +1,31 @@
-import www
+from . import mimeparse
+from . import TYPES, MIMES
 
-from www.utils.decorators import cached_property
-
-from .. import exceptions
-
-# Maps all convertor names to mime types
-TYPES = {
-    'text': 'text/plain',
-    'json': 'application/json',
-    'jsonp': 'application/javascript',
-    'form': 'application/x-www-form-urlencoded',
-    'xml': 'application/xml',
-    'mp3': 'audio/mpeg',
-    'bytes': 'application/octet-stream',
-}
-
-# Maps all mime types to convertor names
-MIMES = {
-    'text/plain': 'text',
-    'application/json': 'json',
-    'application/x-www-form-urlencoded': 'form',
-    'application/xml': 'xml',
-    'audio/mpeg': 'mp3',
-    'application/octet-stream': 'bytes',
-}
-
-def mime_list(types):
+def iter_mimes(types):
     """
     Return a list of convertors prepared for mimeparse.best_match
     """
     for type in reversed(types):
-        yield MIMES.get(type, type)
+        for mimes in TYPES.get(type, list(type)):
+            for mime in mimes:
+                yield mime
 
-def accept_type(allowed, header):
-    match = mimeparse.best_match(mime_list(allowed), header)
-    type = TYPES.get(match)
-    if type not in allowed:
-        raise exceptions.NotAcceptable(header)
-    return type
+def value(allowed, type):
+    """
+    Negotiate a media-type value.
+    """
+    type = MIMES.get(type, type)
+    if type in allowed:
+        return type
+    #raise exceptions.UnsupportedMediaType(header)
 
-def content_type(allowed, header):
-    #see http://www.ietf.org/rfc/rfc2616.txt section 7.2.1
-    #type = TYPES.get(header, 'application/octet-stream')
-    type = TYPES.get(header)
-    if type not in allowed:
-        raise exceptions.UnsupportedMediaType(header)
-    return type
+def range(allowed, header):
+    """
+    Negotiate a media-range header.
+    """
+    match = mimeparse.best_match(iter_mimes(allowed), TYPES.get(header, header))
+    return value(allowed, match)
+    #raise exceptions.NotAcceptable(header)
+
+
 

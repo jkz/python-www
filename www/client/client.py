@@ -2,8 +2,8 @@ import functools
 import mmap
 
 from www import methods
+from www import content
 from www.core import http
-from www.core import content
 from www.utils.decorators import lazy_property
 
 class Authority(http.Authority):

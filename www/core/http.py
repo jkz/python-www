@@ -334,7 +334,7 @@ class Request(collections.UserDict):
 
     def split(self):
         method = self.method
-        url = self.url.identifier
+        url = self.url.absolute
         body = self.body
         headers = self.headers.copy()
         return (method, url, body, headers)
