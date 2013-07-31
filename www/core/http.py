@@ -43,7 +43,7 @@ class Body:
     """
     An interface to all kinds of request bodies.
     """
-    def __init__(self, body=None, fileno=None):
+    def __init__(self, body=None, iterable=None, fileno=None):
         if body:
             if isinstance(body, str):
                 self.body = [body]
@@ -55,9 +55,11 @@ class Body:
             except AttributeError:
                 self.body = body
             '''
+        elif iterable:
+            self.iterable = iterable
 
         elif fileno:
-            self.map = mmap.mmap(fileno(), 0, prot=mmap.PROT_READ)
+            self.map = mmap.mmap(fileno, 0)#, access=mmap.PROT_READ)
         else:
             self.body = io.StringIO()
 
@@ -76,6 +78,8 @@ class Body:
                 yield line
 
     def __iter__(self):
+        if self.iterable:
+            return self.body.iterable.__iter__()
         return self.body.__iter__()
 
     def __str__(self):
@@ -183,7 +187,7 @@ class Authority:
 
     @property
     def secure(self):
-        return self.scheme == 'https'
+        return getattr(self, 'scheme', None) == 'https'
 
     @property
     def userinfo(self):

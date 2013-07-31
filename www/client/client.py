@@ -2,6 +2,7 @@ import functools
 import mmap
 
 from www import methods
+from www import lib
 from www.content import deserialize
 from www.core import http
 from www.utils.decorators import lazy_property
@@ -11,12 +12,10 @@ class Authority(http.Authority):
     Requires the inheritor to have a domain string field.
     """
     host = None
-    port = None
 
     format = None
     streaming = False
 
-    strict = False
     timeout = 5.0  # seconds
     reconnect_time = 5.0  #seconds
     exceptions = False
@@ -44,7 +43,7 @@ class Authority(http.Authority):
 
     @property
     def connector(self):
-        return http.HTTPSConnection if self.secure else http.HTTPConnection
+        return lib.http.HTTPSConnection if self.secure else lib.http.HTTPConnection
 
     def connect(self):
         """
@@ -53,7 +52,7 @@ class Authority(http.Authority):
         if self.connection is not None:
             return
         self.connection = self.connector(host=self.host, port=self.port,
-                strict=self.strict, timeout=self.timeout)
+                timeout=self.timeout)
 
     def disconnect(self):
         """
@@ -83,7 +82,7 @@ class Authority(http.Authority):
         # Open a connection if it is not manually handled
         if self.auto_connect:
             self.connect()
-        _headers = Header(self.headers or {})
+        _headers = http.Header(self.headers or {})
         _headers.update(headers)
 
         params = method, url, body, _headers
@@ -150,7 +149,7 @@ def implement_methods(function, namespace, attr=False):
         if attr:
             setattr(namespace, name, partial)
         else:
-            namespace[name] = method
+            namespace[name] = partial
 
 implement_methods(Authority.prepare, Authority, True)
 
@@ -192,10 +191,10 @@ class Request(http.Request):
         return super().split()
 
     def stream(self, **kwargs):
-        return self.resource.authority.stream(*self.split(), **kwargs)
+        return self.url.authority.stream(*self.split(), **kwargs)
 
     def fetch(self):
-        return self.resource.authority.fetch(*self.split())
+        return self.url.authority.fetch(*self.split())
 
     '''
     def __call__(self, format=None):
@@ -223,10 +222,10 @@ class Response(http.Response):
     def __init__(self, response, streaming=False, exceptions=False,
             redirects=False):
         super().__init__(
-                status=response.status,
-                reason=response.header,
+                code=response.status,
+                reason=response.reason,
                 headers=response.getheaders(),
-                body=Body(fileno=response.fileno()))
+                body=http.Body(iterable=response))
 
         self.version = response.version
         self.response = response

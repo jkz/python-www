@@ -13,3 +13,4 @@ from .core.http import (
         Response
 )
 
+from .shortcuts import *
