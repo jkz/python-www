@@ -78,66 +78,22 @@ def server(host, port, router, *apps):
     return wsgi.server(host, port, stack)
 
 
-Negotiator = object
-
-class Accept(Negotiator):
-    as_kwarg  = 'ext'
-    as_query  = 'format'
-
-    help_text = "The response data format"
-
-    @property
-    def as_header(self):
-        return ('Accept', lambda self, header: accept_header(self.field.choices, header))
-
-
-class ContentType(Negotiator):
-    as_query  = 'content_type'
-
-    help_text = "The request data format"
-
-    @property
-    def as_header(self):
-        return ('Content-Type', lambda self, header:
-                content_type(self.field.choices, header))
-
-
-class Language(Negotiator):
-    as_kwarg  = 'lang'
-    as_query  = 'lang'
-    as_header = 'Accept-Language'
-
-    help_text = "The response data language"
-
-class Content(Middleware):
-    def resolve(self, request, response):
-        request['data'] = deserialize(request.body, request['Content-Type'])
-        data = self.application(request, response)
-        serialized = serialize(data, response['Content-Type'])
-        response['Content-Length'] = len(serialized)
-        return serialized
-
 class Deserialize(Middleware):
-    def resolve(self, request, response):
-        request['data'] = deserialize(request.body,
-                request['Content-Type'])
-        return self.application(request, response)
+    def resolve(self, request):
+        request['data'] = deserialize(request.body, request.content_type)
+        return self.application(request)
 
 
 class Serialize(Middleware):
-    def resolve(self, request, response):
-        data = self.application(request, response)
-        serialized = serialize(data, response['content-type'])
-        response['Content-Length'] = len(serialized)
-        return serialized
+    def resolve(self, request):
+        data = self.application(request)
+        return serialize(data, request.accept)
+
 
 content = Stack([
-    Accept,
-    Language,
-    ContentType,
-    Content,
+    Serialize,
+    Deserialize,
 ])
-
 
 
 Stack([
@@ -145,4 +101,3 @@ Stack([
     Router,
     Content,
 ])
-

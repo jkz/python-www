@@ -1,7 +1,16 @@
 from www.core import http
 from www.content import negotiate
 
+class Method(http.Method):
+    def __get__(self, obj, cls):
+    	if obj and 'method' in obj:
+    		return obj['method']
+    	return super().__get__(obj, cls)
+
+
 class Request(http.Request):
+	method = Method()
+
     @property
     def path(self):
     	if 'path' in self:
@@ -30,7 +39,7 @@ class Request(http.Request):
     @property
     def accept(self):
     	if 'accept' in self:
-    		return self['accept_type']
+    		return self['accept']
     	elif 'Accept' in self.headers:
     		return negotiate.range(self.headers['Accept'])
     	elif 'HTTP_ACCEPT' in self:
