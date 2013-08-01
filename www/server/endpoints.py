@@ -10,7 +10,7 @@ import www
 from www.server import responses
 from . import middleware
 
-class Endpoint(middleware.Middleware):
+class Endpoint:
     # The methods that are allowed on this endpoint
     methods = www.methods.ALL
 
@@ -48,7 +48,8 @@ class Endpoint(middleware.Middleware):
         raise response
 
     def resolve(self, request):
-        if not request['method'] in self.methods:
+        method = request.get('method', request.method)
+        if not method in self.methods:
             raise www.MethodNotAllowed
 
         request['endpoint'] = self

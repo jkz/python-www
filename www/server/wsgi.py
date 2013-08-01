@@ -1,6 +1,7 @@
 import functools
 import wsgiref
 from wsgiref.util import setup_testing_defaults
+from wsgiref.simple_server import make_server
 
 from www.core import http
 from www.utils.functions import header_case
@@ -44,7 +45,8 @@ def application(app):
     argument.
     """
     @functools.wraps(app)
-    def func(environ, start_response):
+    def func(environ, start_response, extra):
+        print(locals())
         request = parse(environ)
         response = app(request)
         start_response(response.status, response.headers)
@@ -57,7 +59,7 @@ class Application:
 
     def __call__(self, environ, start_response):
         request = parse(environ)
-        response = app(request)
+        response = self.app(request)
         start_response(response.status, response.headers)
         return list(response.body)
 
@@ -66,15 +68,18 @@ class Server:
         self.authority = authority
         self.app = app
 
-    @application
-    def application(self, request):
+    def application(self, environ, start_response):
         """Compatible with both www and wsgi applications"""
+        request = parse(environ)
         request.authority = self.authority
-        return self.app(request)
+        response = self.app(request)
+        print('STATUS', response.status, response)
+        start_response(response.status, list(response.headers.items()))
+        return list(response.body.iterbytes())
 
 
     def serve(self, forever=True):
-        server = wsgiref.make_server(self.authority.host, self.authority.port,
+        server = make_server(self.authority.host, self.authority.port,
                 self.application)
         if forever:
             server.serve_forever()

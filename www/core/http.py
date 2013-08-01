@@ -44,6 +44,7 @@ class Body:
     An interface to all kinds of request bodies.
     """
     def __init__(self, body=None, iterable=None, fileno=None):
+        self.iterable = iterable
         if body:
             if isinstance(body, str):
                 self.body = [body]
@@ -55,9 +56,6 @@ class Body:
             except AttributeError:
                 self.body = body
             '''
-        elif iterable:
-            self.iterable = iterable
-
         elif fileno:
             self.map = mmap.mmap(fileno, 0)#, access=mmap.PROT_READ)
         else:
@@ -77,10 +75,12 @@ class Body:
             for line in iter(self.map.readline, hint):
                 yield line
 
+    def iterbytes(self):
+        for chunk in iter(self):
+            yield chunk.encode('utf-8')
+
     def __iter__(self):
-        if self.iterable:
-            return self.body.iterable.__iter__()
-        return self.body.__iter__()
+        return iter(self.iterable or self.body)
 
     def __str__(self):
         return str(self.body)
@@ -343,13 +343,24 @@ class Request(collections.UserDict):
         headers = self.headers.copy()
         return (method, url, body, headers)
 
-
-    def __missing__(self, key):
         raise exceptions.Missing(key)
 
     def __str__(self):
         return '{} {}'.format(self.method, self.resource)
 
+    @property
+    def path(self):
+        return self.url.absolute
+
+    def __missing__(self, key):
+    @property
+    def content_type(self):
+        return self.get('content_type',
+            self.headers.get('Content-Type', self.get('CONTENT_TYPE')))
+
+    @property
+    def content_length(self):
+        return len(self.body)
 
 class Response:
     #version = 'HTTP/1.1'

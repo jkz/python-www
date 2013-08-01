@@ -59,6 +59,6 @@ def build(request):
     schema = request.url.query.get('schema', 'default')
     schema = request['endpoint'].schemas.get(schema)
     if fields:
-        schema = s.Object(key, schema[key] for key in fields)
+        schema = s.Object((key, schema[key]) for key in fields)
     request['schema'] = schema
 

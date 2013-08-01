@@ -10,7 +10,7 @@ def iter_mimes(types):
             for mime in mimes:
                 yield mime
 
-def value(allowed, type):
+def type(allowed, type):
     """
     Negotiate a media-type value.
     """
@@ -19,12 +19,12 @@ def value(allowed, type):
         return type
     #raise exceptions.UnsupportedMediaType(header)
 
-def range(allowed, header):
+def range(allowed, range):
     """
     Negotiate a media-range header.
     """
-    match = mimeparse.best_match(iter_mimes(allowed), TYPES.get(header, header))
-    return value(allowed, match)
+    match = mimeparse.best_match(iter_mimes(allowed), TYPES.get(range, range))
+    return type(allowed, match)
     #raise exceptions.NotAcceptable(header)
 
 

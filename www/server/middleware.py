@@ -1,3 +1,5 @@
+from www.utils.decorators import lazy_property
+
 class Middleware:
     def __init__(self, app):
         self.app = app
@@ -6,15 +8,21 @@ class Middleware:
         return self.app(request)
 
 
-class Stack:
+class Stack(list):
     """
     Take any amount of middleware and return it as a single one.
     """
-    def __init__(self, *apps):
-        self.apps = apps
+    def insert(self, index, value):
+        if isinstance(index, int):
+            return super().insert(index, value)
+        elif isinstance(index, str):
+            for i, e in enumerate(list):
+                if getattr(e, '__name__', e.__class__.__name__) == str:
+                    return self.insert(i, value)
+        self.insert(self.index(index), value)
 
     def __call__(self, app):
-        for wrap in reversed(self.apps):
+        for wrap in reversed(self):
             app = wrap(app)
         return app
 
@@ -50,7 +58,7 @@ class Cache(Middleware):
         response = self.app(request)
 
         # Cache the fresh response if the request is cachable
-        if self.cachable(request)
+        if self.cachable(request):
             self.set(self.key(request), response)
 
         return response
@@ -67,7 +75,7 @@ class Guard(Middleware):
 
     def __call__(self, request):
         try:
-            raise self.resolve(request):
+            raise self.resolve(request)
         except TypeError:
             return self.app(request)
 

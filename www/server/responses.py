@@ -30,7 +30,7 @@ class Response(http.Response, exceptions.Raisable):
         #XXX: If a status is overwritten, but does not specify a reason, the
         #     old reason could persist, which might be unwanted behaviour
         if isinstance(status, str):
-            code, reason = status.split(' ', 2)
+            code, reason = status.split(' ', 1)
             code = int(code)
         elif status:
             code = status

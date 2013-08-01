@@ -18,6 +18,7 @@ import collections
 import re
 
 from www import shortcuts
+from www.server import responses
 
 #XXX Needs test coverage
 #XXX Needs fields

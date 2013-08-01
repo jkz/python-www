@@ -1,7 +1,7 @@
-from www.rest.servers import Server
 from www.rest.routes import crud
 from www.server.routes import Route
 from www.server.responses import Response
+from www.server.middlewares import server as _server_
 
 from . import dummy
 
@@ -25,7 +25,11 @@ print(api.resolve('/api/users/1'))
 print(api.resolve('/api/users/1/posts'))
 print(api.resolve('/api/users/1/posts/2'))
 
-server = Server(routes=api)
+Stack
+
+server = _server_('localhost', 333, api)
+server.forever()
+
 request = server.request(method='GET', url='/api/users')
 
 request['method'] = 'POST'
