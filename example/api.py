@@ -1,6 +1,6 @@
 from www.rest import routes
 from www.rest import stack
-from www.server.routes import Route
+from www.server.routes import Route, Str
 from www.server.responses import Response
 from www.server import wsgi
 
@@ -16,17 +16,25 @@ class Post(dummy.Dummy):
 class UserPosts(dummy.Dummy):
     pass
 
-class File(fs.Resource)
+class File(fs.Resource):
 	root = '/tmp/resttestdata'
 
-api = Route('',
+api = Route('/api',
 	dummy = Route('/dummy',
 	    users = routes.crud('/users', User()),
-	    posts = routes.crud('/posts', Post()),)
-	files = routes.crud('/files', one=Str('.*'))
-	    users = routes.crud('', File()),
+	    posts = routes.crud('/posts', Post()),
+    ),
+	files = Route('/fs/{path}', fs.Endpoint(File()), path=Str('.*'))
 )
-api.users.one.routes['posts'] = Route('/posts', UserPosts())
+print('api.files')
+print(api.files)
+print(api.files.pattern)
+print(api.dummy.users)
+print(api.dummy.users.pattern)
+print(api.dummy.users.one)
+print(api.dummy.users.one.pattern)
+print(api.files._parts)
+api.dummy.users.one.routes['posts'] = Route('/posts', UserPosts())
 
 wsgi.Server('localhost', 333, stack.build(api)).forever()
 

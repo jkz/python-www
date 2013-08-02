@@ -41,7 +41,8 @@ class Missing(Error):
     pass
 
 
+class NotFound(Error):
+    code = 404
+
 class MethodNotAllowed(Error):
     code = 405
-
-

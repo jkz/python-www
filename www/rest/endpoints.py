@@ -101,4 +101,3 @@ class All(Endpoint):
     def DELETE(self, request):
         "Delete a filtered collection"
         self.resource.drop(request)
-

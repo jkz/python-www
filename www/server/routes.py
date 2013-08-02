@@ -131,7 +131,7 @@ class Route:
         endpoints = {self.endpoint, self.name}
         for route in self.routes:
             for endpoint, name in route.endpoints.items():
-                endpoints[endpoint] = '{}.{}'.format(self.name, name)]
+                endpoints[endpoint] = '{}.{}'.format(self.name, name)
         return endpoints
 
 

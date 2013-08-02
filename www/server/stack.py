@@ -7,6 +7,11 @@ from . import http, middleware, responses
 class Excepts(middleware.Layer):
     def resolve(self, request):
         try:
+            resp = responses.Ok(self.application(request))
+            for key, val in request.items():
+                if key.lower() == key:
+                    print(key, val)
+            return resp
             return responses.Ok(self.application(request))
         except responses.Response as response:
             return response

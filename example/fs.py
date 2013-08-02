@@ -2,12 +2,11 @@ import os
 import sys
 import shutil
 
-import www
-
+from www.core import exceptions
 from www.server import responses
 from www.rest import resources, endpoints
 
-class Resource(resource.Resource):
+class Resource(resources.Resource):
     """
     A filesystem state.
     """
@@ -44,13 +43,11 @@ class Resource(resource.Resource):
         else:
             raise exceptions.NotFound
 
-class One(endpoints.Endpoint):
+class Endpoint(endpoints.One):
     def identify(self, request):
-        return self.resource.root + '/' + request.kwargs['path']
-
-    def reverse(self, request):
-        return request['router'].reverse(self.resource.name, path=request['identifier'])
+        print(self.resource.root + '/' + request['kwargs']['path'])
+        return self.resource.root + '/' + request['kwargs']['path']
 
     def POST(self, request):
         data = self.resource.replace(request['identifier'])
-        raise responses.Created(location=self.reverse(request))
+        raise responses.Created(location=self.reverse(request, path=request['identifier']))
