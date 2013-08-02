@@ -59,8 +59,8 @@ class Endpoint(middleware.Endpoint):
 
         return getattr(self, request.method)(request)
 
-    def reverse(self, request):
-        return request['router'].reverse(self.resource.name)
+    def reverse(self, request, **kwargs):
+        return request['router'].reverse(self, **kwargs)
 
     def __repr__(self):
         return 'endpoint {}.{}'.format(self.resource.__class__.__name__,

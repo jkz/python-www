@@ -1,11 +1,6 @@
-from www.server.endpoints import Endpoint
-from www.server import responses
+from www.server import endpoints, responses
 
-from www.core.options import Options, Option
-from www.core.fields import String
-
-
-class Endpoint(Endpoint):
+class Endpoint(endpoints.Endpoint):
     def envelope(self, status, meta):
         return lambda body: {'code': status, 'meta': meta, 'data': body}
 
@@ -16,15 +11,6 @@ class Endpoint(Endpoint):
 class One(Endpoint):
     methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
 
-    options = Options(
-        identifier = Option(
-            as_kwarg = 'uid',
-            field = String(
-                help_text = "A unique identifier without a slash",
-                required = True,
-            )
-        )
-    )
     def identify(self, request):
         return request['kwargs']['uid']
 
@@ -55,16 +41,6 @@ class One(Endpoint):
 
 class Few(Endpoint):
     methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
-
-    options = Options(
-        identifier = Option(
-            as_kwarg = 'uids',
-            field = String(
-                help_text = "A list of identifiers without a slash",
-                required = True,
-            )
-        )
-    )
 
     def identify(self, request):
         return request['kwargs']['uids']
@@ -109,8 +85,7 @@ class All(Endpoint):
     def POST(self, request):
         "Append a new entity or collection"
         uid = self.resource.create(request['data'])
-        #TODO put the reverse/location function in the proper place
-        location = request['router'].reverse(self.name + '.one', uid=uid)
+        location = self.reverse(request, uid=uid)
         raise responses.Created(location=location)
 
     def GET(self, request):
