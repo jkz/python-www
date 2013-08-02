@@ -14,7 +14,7 @@ class Request(Request):
     def path(self):
         if 'path' in self:
             return self['path']
-        return self.url.absolute
+        return self.url.path
 
     @property
     def content_type(self):

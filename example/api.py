@@ -5,6 +5,7 @@ from www.server.responses import Response
 from www.server import wsgi
 
 from . import dummy
+from . import fs
 
 class User(dummy.Dummy):
     pass
@@ -15,9 +16,15 @@ class Post(dummy.Dummy):
 class UserPosts(dummy.Dummy):
     pass
 
-api = Route('/api',
-    users = routes.crud('/users', User()),
-    posts = routes.crud('/posts', Post()),
+class File(fs.Resource)
+	root = '/tmp/resttestdata'
+
+api = Route('',
+	dummy = Route('/dummy',
+	    users = routes.crud('/users', User()),
+	    posts = routes.crud('/posts', Post()),)
+	files = routes.crud('/files', one=Str('.*'))
+	    users = routes.crud('', File()),
 )
 api.users.one.routes['posts'] = Route('/posts', UserPosts())
 

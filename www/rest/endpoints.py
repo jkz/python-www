@@ -111,7 +111,7 @@ class All(Endpoint):
         uid = self.resource.create(request['data'])
         #TODO put the reverse/location function in the proper place
         location = request['router'].reverse(self.name + '.one', uid=uid)
-        raise responses.Created(request, location=location)
+        raise responses.Created(location=location)
 
     def GET(self, request):
         "Return a filtered collection"
