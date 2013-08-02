@@ -19,6 +19,7 @@ import re
 
 from www import shortcuts
 from www.server import responses
+from www.utils.decorators import lazy_property
 
 #XXX Needs test coverage
 #XXX Needs fields
@@ -121,6 +122,19 @@ class Route:
         except KeyError:
             raise AttributeError
 
+    @lazy_property
+    def endpoints(self):
+        """
+        Build a map of endpoints to full endpoint names, so they can be
+        reversed.
+        """
+        endpoints = {self.endpoint, self.name}
+        for route in self.routes:
+            for endpoint, name in route.endpoints.items():
+                endpoints[endpoint] = '{}.{}'.format(self.name, name)]
+        return endpoints
+
+
     def reverse(self, name='', **kwargs):
         """
         Usage:
@@ -129,7 +143,14 @@ class Route:
 
         Build an url by recursively replacing kwargs and appending
         reversed nested routes.
+
+        OR
+
+        route.reverse(Endpoint, **kwargs)
         """
+        if not isinstance(name, str):
+            name = self.endpoints[name]
+
         # Prepare the arguments for the path
         format_args = {key: part.reverse(kwargs.pop(key))
                 for key, part in self._parts.items()}
