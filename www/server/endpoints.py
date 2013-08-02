@@ -10,12 +10,15 @@ import www
 from www.server import responses
 from . import middleware
 
-class Endpoint:
+class Endpoint(middleware.Endpoint):
     # The methods that are allowed on this endpoint
     methods = www.methods.ALL
 
     def __init__(self, resource):
         self.resource = resource
+
+    def identify(self, request):
+        pass
 
     def GET(self, request):
         raise www.NotImplemented
@@ -48,17 +51,14 @@ class Endpoint:
         raise response
 
     def resolve(self, request):
-        method = request.get('method', request.method)
-        if not method in self.methods:
+        if not request.method in self.methods:
             raise www.MethodNotAllowed
 
-        request['endpoint'] = self
+        request['identifier'] = self.identify(request)
+        #request['endpoint'] = self
 
-        return getattr(self, request['method'])(request)
+        return getattr(self, request.method)(request)
 
     def __repr__(self):
         return 'endpoint {}.{}'.format(self.resource.__class__.__name__,
                 self.__class__.__name__)
-
-
-

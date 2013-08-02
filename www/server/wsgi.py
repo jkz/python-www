@@ -1,9 +1,10 @@
 import functools
 import wsgiref
+
 from wsgiref.util import setup_testing_defaults
 from wsgiref.simple_server import make_server
 
-from www.core import http
+from www.server import http, stack
 from www.utils.functions import header_case
 
 def extract(env, key):
@@ -54,6 +55,10 @@ def application(app):
     return func
 
 class Application:
+    """
+    Wrap a www application callable which takes a request object as its single
+    argument.
+    """
     def __init__(self, app):
         self.app = app
 
@@ -63,42 +68,39 @@ class Application:
         start_response(response.status, response.headers)
         return list(response.body)
 
-class Server:
-    def __init__(self, authority, app):
-        self.authority = authority
-        self.app = app
-
-    def application(self, environ, start_response):
+class Server(stack.Server):
+    def wsgi_application(self, environ, start_response):
         """Compatible with both www and wsgi applications"""
         request = parse(environ)
-        request.authority = self.authority
-        response = self.app(request)
-        print('STATUS', response.status, response)
+        response = self.resolve(request)
+        print('RESPONSE', response)
+        print('STATUS', response.status)
+        print('HEADERS', response.headers)
+        print('BODY', response.body)
         start_response(response.status, list(response.headers.items()))
         return list(response.body.iterbytes())
 
+    def make(self, app=None):
+        return make_server(self.authority.host, self.authority.port,
+                app or self.wsgi_application)
 
-    def serve(self, forever=True):
-        server = make_server(self.authority.host, self.authority.port,
-                self.application)
-        if forever:
-            server.serve_forever()
-        else:
-            server.handle_request()
+    def forever(self, app=None):
+        print('{} - Serving forever!'.format(self.authority))
+        self.make(app).serve_forever()
 
-    def forever(self):
-        return self.serve(forever=True)
+    def once(self, app=None):
+        print('{} - Handling next request.'.format(self.authority))
+        self.make(app).handle_request()
 
-    def once(self):
-        return self.serve(forever=False)
+    def serve(self, app=None, forever=True):
+        self.forever(app) if forever else self.once(app)
 
 
-def server(host, port, app):
-    authority = http.Authority(host=host, port=port)
-    return Server(authority=authority, app=app)
+def server(host, port, *args, **kwargs):
+    return Server(host, port, stack.build(*args, **kwargs))
 
-def serve(host, port, app, forever=True):
-    server(host, port, app).serve(forever)
+def serve(host, port, *args, forever=True, **kwargs):
+    server(host, port, *args, **kwargs).serve(forever=forever)
 
 def setup_environ(**kwargs):
     """

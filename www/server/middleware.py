@@ -1,25 +1,42 @@
 from www.utils.decorators import lazy_property
 
-class Middleware:
-    def __init__(self, app):
-        self.app = app
+from . import responses
+
+class Layer:
+    def __init__(self, application):
+        self.application = application
 
     def __call__(self, request):
-        return self.app(request)
+        print('LAYER', self)
+        return self.resolve(request)
+
+class Endpoint:
+    def resolve(self, request):
+        return responses.OK()
+
+    def __call__(self, request):
+        print('ENDPOINT', self)
+        return self.resolve(request)
 
 
 class Stack(list):
     """
     Take any amount of middleware and return it as a single one.
     """
-    def insert(self, index, value):
+    def insert(self, index, value, after=True):
         if isinstance(index, int):
+            if after:
+                int += 1
             return super().insert(index, value)
         elif isinstance(index, str):
             for i, e in enumerate(list):
                 if getattr(e, '__name__', e.__class__.__name__) == str:
-                    return self.insert(i, value)
-        self.insert(self.index(index), value)
+                    return self.insert(i, value, after)
+        self.insert(self.index(index), value, after)
+
+    def __add__(self, other):
+        combined = super().__add__(other)
+        return self.__class__(combined)
 
     def __call__(self, app):
         for wrap in reversed(self):
@@ -27,7 +44,7 @@ class Stack(list):
         return app
 
 
-class Cache(Middleware):
+class Cache(Layer):
     """
     Checks if valid data is available in a temporary storage backend.
     This should wrap an application and its resolve method should return
@@ -55,7 +72,7 @@ class Cache(Middleware):
             return cached
 
         # Get a fresh response
-        response = self.app(request)
+        response = self.application(request)
 
         # Cache the fresh response if the request is cachable
         if self.cachable(request):
@@ -64,7 +81,7 @@ class Cache(Middleware):
         return response
 
 
-class Guard(Middleware):
+class Guard(Layer):
     """
     Raises responses (to bypass non-exceptionhandled middlewares)
     if a request does not pass the guard. Else returns the application's
@@ -77,10 +94,10 @@ class Guard(Middleware):
         try:
             raise self.resolve(request)
         except TypeError:
-            return self.app(request)
+            return self.application(request)
 
 
-class Option(Middleware):
+class Option(Layer):
     """
     Enriches the request object.
     """
@@ -88,6 +105,7 @@ class Option(Middleware):
         pass
 
     def __call__(self, request):
+        print('OPTION', self)
         self.resolve(request)
-        return self.app(request)
+        return self.application(request)
 

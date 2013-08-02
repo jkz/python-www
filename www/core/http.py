@@ -17,8 +17,11 @@ class Meta(dict):
     pass
 
 class Query(structures.MultiDict):
-    def __init__(self, *args, verbatim=False, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, mapping=None, verbatim=False, **kwargs):
+        if isinstance(mapping, (str, bytes)):
+            mapping = lib.parse_qsl(mapping)
+        super().__init__(mapping)
+        self.update(kwargs)
         self.use_verbatim = verbatim
 
     def verbatim(self):
@@ -159,16 +162,15 @@ class Authority:
     port = Port()
 
     def __init__(self,
-            url='',
-            scheme=None,
-            host=None,
+            host='',
             port=None,
+            scheme=None,
             #username=None,
             #password=None,
         ):
 
         # Split the url into scheme, port, host, query and path
-        _scheme, netloc, _, _, _ = lib.urlsplit(url, True)
+        _scheme, netloc, _, _, _ = lib.urlsplit(host, True)
 
         # Set the connection on self to extract parameters and enable requests.
         # split the netlocation into userinfo and hostinfo
@@ -179,7 +181,7 @@ class Authority:
         _host, _, _port = hostinfo.partition(':')
 
         self.scheme = scheme or _scheme or 'http'
-        self.host = host or _host
+        self.host = _host
         #XXX automatic port for default schemes could be desirable
         self.port = port or _port
         #self.username = username or _username or None
@@ -258,8 +260,8 @@ class Resource:
         _scheme, netloc, self.path, _query_string, self.fragment = lib.urlsplit(url, True)
 
         # Create a netlocation object
-        self.authority = authority or self.Authority(netloc,
-                scheme=_scheme or scheme, host=host, port=port)
+        self.authority = authority or self.Authority(host or netloc,
+                scheme=_scheme or scheme, port=port)
 
         # Override path if explicitly passed
         if path is not None:
@@ -343,24 +345,17 @@ class Request(collections.UserDict):
         headers = self.headers.copy()
         return (method, url, body, headers)
 
+    def __missing__(self, key):
         raise exceptions.Missing(key)
 
+    def __contains__(self, key):
+        try:
+            return self[key] is not None
+        except exceptions.Missing:
+            return False
+
     def __str__(self):
-        return '{} {}'.format(self.method, self.resource)
-
-    @property
-    def path(self):
-        return self.url.absolute
-
-    def __missing__(self, key):
-    @property
-    def content_type(self):
-        return self.get('content_type',
-            self.headers.get('Content-Type', self.get('CONTENT_TYPE')))
-
-    @property
-    def content_length(self):
-        return len(self.body)
+        return '{} {}'.format(self.method, self.url)
 
 class Response:
     #version = 'HTTP/1.1'
@@ -387,4 +382,3 @@ class Response:
 
     def __str__(self):
         return self.status
-

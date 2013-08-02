@@ -1,7 +1,8 @@
-from www.rest.routes import crud
+from www.rest import routes
+from www.rest import stack
 from www.server.routes import Route
 from www.server.responses import Response
-from www.server.middlewares import server as _server_
+from www.server import wsgi
 
 from . import dummy
 
@@ -15,20 +16,18 @@ class UserPosts(dummy.Dummy):
     pass
 
 api = Route('/api',
-    users = crud('/users', User()),
-    posts = crud('/posts', Post()),
+    users = routes.crud('/users', User()),
+    posts = routes.crud('/posts', Post()),
 )
 api.users.one.routes['posts'] = Route('/posts', UserPosts())
+
+wsgi.Server('localhost', 333, stack.build(api)).forever()
 
 print(api.resolve('/api/users'))
 print(api.resolve('/api/users/1'))
 print(api.resolve('/api/users/1/posts'))
 print(api.resolve('/api/users/1/posts/2'))
 
-Stack
-
-server = _server_('localhost', 333, api)
-server.forever()
 
 request = server.request(method='GET', url='/api/users')
 

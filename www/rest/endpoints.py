@@ -25,6 +25,8 @@ class One(Endpoint):
             )
         )
     )
+    def identify(self, request):
+        return request['kwargs']['uid']
 
     @property
     def schemas(self):
@@ -63,6 +65,9 @@ class Few(Endpoint):
             )
         )
     )
+
+    def identify(self, request):
+        return request['kwargs']['uids']
 
     @property
     def schemas(self):
