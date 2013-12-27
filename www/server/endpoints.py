@@ -51,6 +51,8 @@ class Endpoint(middleware.Endpoint):
         raise response
 
     def resolve(self, request):
+        print("RESOLVING", request.method, 'WITH', getattr(self, request.method))
+
         if not request.method in self.methods:
             raise www.MethodNotAllowed
 

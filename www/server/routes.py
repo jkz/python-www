@@ -32,11 +32,15 @@ class Part:
 
     """
     pattern = '[^/]+'
-    def __init__(self, pattern=None, convert=None):
+    optional = False
+
+    def __init__(self, pattern=None, convert=None, optional=None):
         if pattern is not None:
             self.pattern = pattern
         if convert:
             self.convert = convert
+        if optional is not None:
+            self.optional = optional
 
     def convert(self, val):
         return val
@@ -112,18 +116,32 @@ class Route:
         # Add the routes sorted by serial
         for key, val in sorted(routes, key=lambda x: x[1]._serial):
             self.routes[key] = val
+            setattr(self, key, val)
 
         self._compiled = re.compile(str(self))
 
+    """
     def __getattr__(self, attr):
         # Expose nested routes as attributes by their name
         try:
             return self.routes[attr]
         except KeyError:
             raise AttributeError
+    """
 
     @lazy_property
     def endpoints(self):
+        """
+        Build a map of endpoints to route objects.
+        """
+        endpoints = {self.endpoint: self}
+        for route in self.routes.values():
+            endpoints.update(route.endpoints)
+        return endpoints
+
+    @lazy_property
+    #XXX needs a proper name
+    def endpoint_names(self):
         """
         Build a map of endpoints to full endpoint names, so they can be
         reversed.
@@ -152,8 +170,16 @@ class Route:
             name = self.endpoints[name]
 
         # Prepare the arguments for the path
-        format_args = {key: part.reverse(kwargs.pop(key))
-                for key, part in self._parts.items()}
+        format_args = {}
+        for key, part in self._parts.items():
+            val = kwargs.pop(key, None)
+            if val:
+                format_args[key] = part.reverse(val)
+            elif not part.optional:
+                raise Exception("Missing arguments")
+            else:
+                format_args[key] = ''
+
         # Format the path pattern
         path = self.pattern.format(**format_args)
 
@@ -205,6 +231,12 @@ class Route:
 
         # Return the endpoint and the matched, processed kwargs
         return self.endpoint, kwargs
+
+    def meta(self):
+        """
+        Return all the pretty route patterns by name
+        """
+        return {'routes': {name: route.pattern for name, route in self.routes.items()}}
 
     def __str__(self):
         """

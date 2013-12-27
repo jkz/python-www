@@ -4,10 +4,10 @@ from www import shortcuts
 
 class TestShortcuts(unittest.TestCase):
     def test_url(self):
-        self.assertEqual(shortcuts.url('google.com'), 'http://google.com')
-        self.assertEqual(shortcuts.url('google.com', foo='bar'), 'http://google.com?foo=bar')
-        self.assertEqual(shortcuts.url('google.com', scheme='https'), 'https://google.com')
-        self.assertEqual(shortcuts.url('google.com', fragment='fragment'), 'http://google.com#fragment')
+        self.assertEqual(shortcuts.url('example.com'), 'http://example.com')
+        self.assertEqual(shortcuts.url('example.com', key='val'), 'http://example.com?key=val')
+        self.assertEqual(shortcuts.url('example.com', scheme='https'), 'https://example.com')
+        self.assertEqual(shortcuts.url('example.com', fragment='fragment'), 'http://example.com#fragment')
 
     def test_get(self):
         # This is not a real test

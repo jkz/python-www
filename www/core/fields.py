@@ -7,7 +7,7 @@ class Field:
     method for changing external to internal values, and revert for the
     opposite.
 
-    Inward data should e passed to resolve, where it will be converted and
+    Inward data should be passed to resolve, where it will be converted and
     validated.
     Outward data, passed to reverse is considered valid and just needs
     reversion.
@@ -18,8 +18,8 @@ class Field:
 
     # Alias is used to find the fields' respective value on a data object.
     # It has 5 modes:
-    # - str: the name of the field on an object
-    # - int: the index on a given tuple
+    # - <str>: the name of the field on an object
+    # - <int>: the index on a given tuple
     # - True: the accessor configured for the calling context
     # - False: pass the entire object
     # - None: do not pass anything at all
@@ -39,7 +39,7 @@ class Field:
     nullable = False
 
     # Flags whether this field requires a value
-    #XXX takes precedence over default when
+    #XXX takes precedence over default when it is Omitted
     required = True
 
     # A user friendly description of the field
@@ -64,14 +64,14 @@ class Field:
         return self.nulls[0]
 
     def get_default(self):
-        #XXX This test could be softer and more pythonic
-        if self.default is exceptions.Omitted:
+        try:
+            raise self.default
+        except exceptions.Omitted:
             if self.nullable:
                 return None
             if self.required:
                 raise exceptions.Missing
-        try:
-            raise self.default
+            raise
         except TypeError:
             return self.default
 
@@ -308,5 +308,5 @@ class Object(Field):
     def meta(self):
         if self.schema:
             return self.schema.meta()
-        return super().schema()
+        return super().meta()
 

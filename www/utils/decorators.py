@@ -30,7 +30,7 @@ def cached_property(f):
 class lazy_property:
     """
     meant to be used for lazy evaluation of an object attribute.
-    property should represent non-mutable data, as it replaces itself.
+    property should represent static data, as it can not be reevaluated.
     """
     def __init__(self, fget):
         self.fget = fget

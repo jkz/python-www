@@ -1,7 +1,7 @@
 import unittest
 
 suite = unittest.TestSuite(
-    unittest.TestLoader().discover('tests', 'test*.py'),
+    unittest.TestLoader().discover('tests.server', 'test*.py'),
 )
 
 def run():

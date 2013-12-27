@@ -8,7 +8,7 @@ from www.server import http, stack
 from www.utils.functions import header_case
 
 def extract(env, key):
-    """Extract a key from a wsgi environment"""
+    """Extract a key from a wsgi environment and converts it to unicode"""
     #TODO: make this worthwile, or remove it
     try:
         return str(env[key])
@@ -46,8 +46,7 @@ def application(app):
     argument.
     """
     @functools.wraps(app)
-    def func(environ, start_response, extra):
-        print(locals())
+    def func(environ, start_response, extra=None):
         request = parse(environ)
         response = app(request)
         start_response(response.status, response.headers)
@@ -72,6 +71,8 @@ class Server(stack.Server):
     def wsgi_application(self, environ, start_response):
         """Compatible with both www and wsgi applications"""
         request = parse(environ)
+        print(79 * '=')
+        print(str(request))
         response = self.resolve(request)
         print('RESPONSE', response)
         print('STATUS', response.status)

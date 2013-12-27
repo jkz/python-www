@@ -5,26 +5,22 @@ from www.content import serialize, deserialize
 from . import http, middleware, responses
 
 class Excepts(middleware.Layer):
+    #TODO proper return value
+    #TODO proper logging
     def resolve(self, request):
         try:
-            resp = responses.Ok(self.application(request))
-            for key, val in request.items():
-                if key.lower() == key:
-                    print(key, val)
-            return resp
-            return responses.Ok(self.application(request))
+            return self.application(request)
         except responses.Response as response:
             return response
         except exceptions.Fault as fault:
-            print('FAULT', fault)
+            print('FAULT', fault, str(fault))
         except exceptions.Error as error:
-            print('ERROR', error)
+            print('ERROR', error, str(error))
         except exceptions.Warning as warning:
-            print('WARNING', warning)
+            print('WARNING', warning, str(warning))
         except Exception as e:
-            print('EXCEPTION', e)
-            raise
-        return 'EXCEPTION'
+            print('EXCEPTION', e, str(e))
+        return responses.InternalServerError()
 
 
 def Router(routes):
@@ -42,7 +38,6 @@ def Router(routes):
     return Router
 
 
-
 class Deserialize(middleware.Layer):
     def resolve(self, request):
         if request.method in {'PUT', 'POST', 'PATCH'}:
@@ -54,6 +49,23 @@ class Serialize(middleware.Layer):
     def resolve(self, request):
         data = self.application(request)
         return serialize(data, request.accept)
+
+
+class Parse(middleware.Layer):
+    def resolve(self, request):
+        if request.method in {'PUT', 'POST', 'PATCH'}:
+            request['data'] = deserialize(request.content, request.content_type)
+        return self.application(request)
+
+
+class Render(middleware.Layer):
+    def render(self, request, data):
+        return str(data)
+
+    def resolve(self, request):
+        data = self.application(request)
+        return self.render(request, data)
+
 
 
 class Authenticate(middleware.Option):

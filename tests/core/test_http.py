@@ -21,6 +21,8 @@ class TestRequest(unittest.TestCase):
         expected = ('GET', '/foo/?kitten=fluffy', None, {})
         self.assertEqual(result, expected)
 
+
+
 class TestAuthority(unittest.TestCase):
     def test_basic(self):
         for a in [
@@ -30,7 +32,6 @@ class TestAuthority(unittest.TestCase):
             http.Authority('http://example.com'),
             http.Authority('http://example.com:80'),
             http.Authority(scheme='http', host='example.com', port=80),
-            http.Authority('wrong.com:80', host='example.com'),
             http.Authority('example.com:81', port=80),
             http.Authority('https://example.com', scheme='http'),
         ]:
@@ -39,6 +40,8 @@ class TestAuthority(unittest.TestCase):
         boob = http.Authority(scheme='boob', host='boob', port=8008)
         self.assertEqual(str(boob), 'boob://boob:8008')
         self.assertEqual(str(http.Authority()), 'http://')
+
+
 
 class TestResource(unittest.TestCase):
     def test_basic(self):

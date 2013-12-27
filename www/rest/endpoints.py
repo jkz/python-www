@@ -8,8 +8,24 @@ class Endpoint(endpoints.Endpoint):
     def schemas(self):
         return self.resource.schemas
 
+    #XXX Somehow this should find all available options and add them to the
+    #    response. The adding of the options metadata could be responsibility
+    #    of the options.Option class, this method would then only need to
+    #    add them to the response body
+    def OPTIONS(self, request):
+        "Return the endpoints and subresources of this resource"
+        meta = {}
+        meta['name'] = self.resource.name
+        meta['links'] = request['router'].endpoints[self].meta()
+        meta['methods'] = {}
+        #XXX Perhaps there should be a meta decorator that provides the
+        #    information
+        for method in self.methods:
+            meta['methods'][method] = getattr(self, method).__doc__
+        return meta
+
 class One(Endpoint):
-    methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
+    methods = {'GET', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'}
 
     def identify(self, request):
         return request['kwargs']['uid']
@@ -40,7 +56,7 @@ class One(Endpoint):
 
 
 class Few(Endpoint):
-    methods = {'GET', 'DELETE', 'PUT', 'PATCH'}
+    methods = {'GET', 'DELETE', 'PUT', 'PATCH', 'OPTIONS'}
 
     def identify(self, request):
         return request['kwargs']['uids']
@@ -72,7 +88,7 @@ class Few(Endpoint):
 
 
 class All(Endpoint):
-    methods = {'GET', 'POST', 'DELETE', 'PATCH'}
+    methods = {'GET', 'POST', 'DELETE', 'PATCH', 'OPTIONS'}
 
     @property
     def schemas(self):
@@ -94,7 +110,7 @@ class All(Endpoint):
         return self.resource.slice(objects)
 
     def PATCH(self, request):
-        "Update each element a filtered collection with the same patch"
+        "Update each element of a filtered collection with the same patch"
         objects = self.resource.query(request)
         self.resource.batch(request, objects)
 

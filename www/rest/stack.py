@@ -34,10 +34,9 @@ class Defaults(middleware.Option):
 		for key in self.params:
 			request[key] = getattr(self, key)
 
-def build(router, *args, dispatcher=Dispatcher()):
+def build(*args, dispatcher=Dispatcher()):
 	base = middleware.Stack([
 		Excepts,
-		Router(router),
 		Defaults,
 		Params,
 		Content,

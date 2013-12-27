@@ -23,7 +23,6 @@ class MultiDict(dict):
     are several methods.
     """
     def __init__(self, mapping=None):
-        print('mapping', mapping)
         if isinstance(mapping, MultiDict):
             super().__init__({k: L[:] for k, L in mapping.lists()})
         elif isinstance(mapping, dict):
