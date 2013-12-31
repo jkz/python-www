@@ -105,4 +105,3 @@ class NormalizedKeysMixin:
         except KeyError:
             self[key] = default
             return default
-

@@ -22,10 +22,11 @@ class Route(routes.Route):
 def crud(path, resource, one=routes.Int(), few=routes.Ints(), **subroutes):
     "Set up all, few and one resource endpoints"
     return Route(path, endpoints.All(resource),
-        new = Route('/new', views.New(resource)),
-        schema = Route('/schema', views.Schema(resource)),
+        #new = Route('/new', views.New(resource)),
+        #schema = Route('/schema', views.Schema(resource)),
 
-        few = Route('/{uids}', endpoints.Few(resource), uids=Int()),
-        one = Route('/{uid}', endpoints.One(resource), uid=Ints(),
-            edit = Route('/edit', views.Edit(resource))),
+        few = Route('/{uids}', endpoints.Few(resource), uids=routes.Int()),
+        one = Route('/{uid}', endpoints.One(resource), uid=routes.Ints(),
+            #edit = Route('/edit', views.Edit(resource))
+        ),
         **subroutes)

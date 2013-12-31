@@ -21,12 +21,8 @@ class Render(stack.Render):
 
         engine.render(template, data, request, data)
 
-class Template(middleware.Render):
-    def render(self, request, data):
-        template = request['template']
 
-
-class Finder(middelware.Option):
+class Finder(middleware.Option):
     def resolve(self, request):
         request['template'] = None
 

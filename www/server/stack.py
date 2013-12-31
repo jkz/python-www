@@ -9,7 +9,7 @@ class Excepts(middleware.Layer):
     #TODO proper logging
     def resolve(self, request):
         try:
-            return self.application(request)
+            return responses.Ok(self.application(request))
         except responses.Response as response:
             return response
         except exceptions.Fault as fault:
@@ -113,7 +113,7 @@ class Server:
         self.application = application
 
     def resolve(self, request):
-        request.authority = self.authority
+        request.url.authority = self.authority
         return self.application(request)
 
 def server(host, port, *args, **kwargs):

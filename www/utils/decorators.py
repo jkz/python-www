@@ -42,4 +42,3 @@ class lazy_property:
         value = self.fget(obj)
         setattr(obj, self.func_name, value)
         return value
-

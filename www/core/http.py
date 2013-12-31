@@ -363,6 +363,9 @@ class Request(collections.UserDict):
     def __str__(self):
         return '{} {}'.format(self.method, self.url)
 
+    def __repr__(self):
+        return ("Request('{}', '{}')".format(self.url, self.method))
+
 class Response:
     #version = 'HTTP/1.1'
     #def status(self):
