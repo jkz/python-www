@@ -12,7 +12,8 @@ def default_kwargs(**defaults):
     return wrap
 
 def cached_property(f):
-    """returns a cached property that is calculated by function f"""
+    """Return a cached property that is calculated by function `f`"""
+    #XXX Add delete support?
     def get(self):
         try:
             return self._property_cache[f]

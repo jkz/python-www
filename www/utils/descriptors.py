@@ -18,7 +18,8 @@ class BindablePartial:
     def __get__(self, obj, cls=None):
         if obj is None:
             return self
-        return functools.partial(self.method, obj, *self.args, **self.kwargs)
+        partial = functools.partial(self.method, obj, *self.args, **self.kwargs)
+        return functools.wraps(self.method)(partial)
 
     def __call__(self, *args, **kwargs):
         return functools.partial(self.method, *self.args, **self.kwargs)(*args, **kwargs)
