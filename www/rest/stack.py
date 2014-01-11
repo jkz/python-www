@@ -37,10 +37,10 @@ class Defaults(middleware.Option):
 def build(router, *args, dispatcher=Dispatcher()):
 	base = middleware.Stack([
 		Excepts,
-		Router(router),
 		Defaults,
 		Params,
+		Router(router),
 		Content,
 	])
-	extra = middleware.Stack(args)
+	extra = middleware.Stack(*args)
 	return (base + extra)(dispatcher)

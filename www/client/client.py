@@ -6,6 +6,7 @@ from www import lib
 from www.content import deserialize
 from www.core import http
 from www.utils.decorators import lazy_property
+from www.utils.descriptors import BindablePartial
 
 class Authority(http.Authority):
     """
@@ -30,8 +31,12 @@ class Authority(http.Authority):
     connection = None
 
     def __init__(self, url='', scheme=None, host=None, port=None, **kwargs):
-        super().__init__(url, scheme=scheme, host=host or self.host, port=port
-                or self.port)
+        #XXX This needs to be synchronized with core.Authority
+        super().__init__(
+            host = url or host or self.host,
+            port = port or self.port,
+            scheme = scheme,
+        )
 
         self.__dict__.update(kwargs)
 
@@ -145,7 +150,8 @@ def implement_methods(function, namespace, attr=False):
     #namespace['open'] = lambda url, **kwargs: function(url=url, **kwargs)()
     for method in methods.ALL:
         name = method.lower()
-        partial = functools.partial(function, method=method)
+        #partial = functools.partial(function, method=method)
+        partial = BindablePartial(function, method=method)
         if attr:
             setattr(namespace, name, partial)
         else:

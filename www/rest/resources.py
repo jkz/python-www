@@ -17,9 +17,8 @@ A resource presents an interface which endpoints use:
 from . import schema
 
 class Resource:
-    @property
-    def name(self):
-        return self.__class__.__name__.lower() + 's'
+    def __init__(self, name=None):
+        self.name = name or self.__class__.__name__.lower() + 's'
 
     def identify(self, representation):
         "Should return identification values for given data"

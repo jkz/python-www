@@ -1,5 +1,6 @@
 class Raisable(BaseException):
-    pass
+    def __str__(self):
+        return self.__class__.__name__
 
 class Info(Raisable):
     pass
@@ -41,7 +42,8 @@ class Missing(Error):
     pass
 
 
+class NotFound(Error):
+    code = 404
+
 class MethodNotAllowed(Error):
     code = 405
-
-

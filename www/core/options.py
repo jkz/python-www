@@ -1,3 +1,5 @@
+# XXX This is probably too specific for the core lib, it is also not entirely
+# clear what the API should be.
 import copy
 
 from . import exceptions
@@ -22,7 +24,7 @@ class Lookup:
 class Option:
     """
     The Option class extracts options from an object. The Option object has a
-    set of containers and on order in which these containers are to be
+    set of containers and an order in which these containers are to be
     consulted. The containers are specified by functions with a signature of
     container(
         self, # the option
@@ -42,7 +44,7 @@ class Option:
     #     param
     # OR
     #     tuple(param, converter)
-    # This ditionary exists so it can easily be overwritten entirely
+    # This dictionary exists so it can easily be overwritten entirely
     options = {}
 
     # The field that validates and converts the actual value
@@ -54,8 +56,9 @@ class Option:
         self.order = conf.pop('order', self.order)
 
         # Add all attributes present in order to options
-        for key, val in self.__dict__.items():
-            if key in self.order:
+        for key in self.order:
+            val = getattr(self, key, None)
+            if val:
                 self.options[key] = val
 
         for key, val in conf.items():
@@ -67,17 +70,22 @@ class Option:
                 setattr(self, key, val)
 
     def lookups_ordered(self):
+        """Generate all (container_name, extract_function) tuples"""
         for container in self.order:
+            try:
+                yield container, self.containers[container]
+            except KeyError:
+                pass
+
+            try:
+                yield container, getattr(self, container)
+            except AttributeError:
+                pass
+
+            if container in self.containers:
+                yield container, self.containers[container]
             if hasattr(self, container):
                 yield container, getattr(self, container)
-
-    def parse(self, container, value):
-        parser = self.parsers.get(container)
-        if not parser:
-            parser = getattr(self, 'parse_' + container)
-        else:
-            return value
-        return parser(value)
 
     def extract(self, container, object, param):
         try:
@@ -113,7 +121,7 @@ class Option:
             value = self.find(object)
         except exceptions.Missing:
             value = self.field.nulls[0]
-        return self.field.parse(value)
+        return self.field.convert(value)
 
 
 class Options(dict):

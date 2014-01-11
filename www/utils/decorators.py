@@ -12,7 +12,8 @@ def default_kwargs(**defaults):
     return wrap
 
 def cached_property(f):
-    """returns a cached property that is calculated by function f"""
+    """Return a cached property that is calculated by function `f`"""
+    #XXX Add delete support?
     def get(self):
         try:
             return self._property_cache[f]
@@ -30,7 +31,7 @@ def cached_property(f):
 class lazy_property:
     """
     meant to be used for lazy evaluation of an object attribute.
-    property should represent non-mutable data, as it replaces itself.
+    property should represent static data, as it can not be reevaluated.
     """
     def __init__(self, fget):
         self.fget = fget
@@ -42,4 +43,3 @@ class lazy_property:
         value = self.fget(obj)
         setattr(obj, self.func_name, value)
         return value
-

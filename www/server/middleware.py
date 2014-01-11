@@ -7,7 +7,6 @@ class Layer:
         self.application = application
 
     def __call__(self, request):
-        print('LAYER', self)
         return self.resolve(request)
 
 class Endpoint:
@@ -15,7 +14,6 @@ class Endpoint:
         return responses.OK()
 
     def __call__(self, request):
-        print('ENDPOINT', self)
         return self.resolve(request)
 
 
@@ -24,21 +22,34 @@ class Stack(list):
     Take any amount of middleware and return it as a single one.
     """
     def insert(self, index, value, after=True):
+        # Insert a layer after the item at index
         if isinstance(index, int):
+            # Update index to insert behind given index rather than before
             if after:
-                int += 1
+                index += 1
             return super().insert(index, value)
+
+        # Find a class with given name and user it as the index
         elif isinstance(index, str):
             for i, e in enumerate(list):
                 if getattr(e, '__name__', e.__class__.__name__) == str:
                     return self.insert(i, value, after)
+
+        # Find the index of given object on the stack and insert the layer
+        # If the object is not present, a value error is raised
         self.insert(self.index(index), value, after)
 
     def __add__(self, other):
+        """
+        Append the other stack (or list of layers)
+        """
         combined = super().__add__(other)
         return self.__class__(combined)
 
     def __call__(self, app):
+        """
+        Decorate given app by the full stack of layers.
+        """
         for wrap in reversed(self):
             app = wrap(app)
         return app
@@ -46,7 +57,7 @@ class Stack(list):
 
 class Cache(Layer):
     """
-    Checks if valid data is available in a temporary storage backend.
+    Checks if valid data is available in a (temporary) storage backend.
     This should wrap an application and its resolve method should return
     a response in a format that is expected from the wrapped application.
     """

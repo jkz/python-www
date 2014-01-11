@@ -17,12 +17,17 @@ class Meta(dict):
     pass
 
 class Query(structures.MultiDict):
-    def __init__(self, mapping=None, verbatim=False, **kwargs):
+    def __init__(self, mapping=None, verbatim=False, sorted=False, **kwargs):
         if isinstance(mapping, (str, bytes)):
             mapping = lib.parse_qsl(mapping)
         super().__init__(mapping)
         self.update(kwargs)
         self.use_verbatim = verbatim
+        self.sorted = sorted
+
+    def items(self, multi=True, sort=False):
+        items = super().items(multi=multi)
+        return sorted(items) if self.sorted else items
 
     def verbatim(self):
         return '&'.join(('='.join(map(str, p)) for p in self.items(multi=True)))
@@ -72,9 +77,10 @@ class Body:
 
     def readlines(self, hint):
         if self.body:
-            return self.body.readlines(hint)
+            for line in self.body.readlines(hint):
+                yield line
 
-        if self.map:
+        elif self.map:
             for line in iter(self.map.readline, hint):
                 yield line
 
@@ -356,6 +362,9 @@ class Request(collections.UserDict):
 
     def __str__(self):
         return '{} {}'.format(self.method, self.url)
+
+    def __repr__(self):
+        return ("Request('{}', '{}')".format(self.url, self.method))
 
 class Response:
     #version = 'HTTP/1.1'
