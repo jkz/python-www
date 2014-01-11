@@ -7,7 +7,7 @@ import www
 from www.server import responses
 from www.rest import resources, endpoints
 
-class Resource(resource.Resource):
+class Resource(resources.Resource):
     """
     A filesystem state.
     """
@@ -27,12 +27,12 @@ class Resource(resource.Resource):
             with open(uid) as handle:
                 data['content'] = handle.read()
         else:
-            raise exceptions.NotFound
+            raise responses.NotFound
         return data
 
     def replace(self, uid, representation):
         if os.path.isdir(uid):
-            raise exceptions.Conflict("Target is a directory")
+            raise responses.Conflict("Target is a directory")
         with open(uid, 'w') as handle:
             handle.write(representation)
 
@@ -42,7 +42,7 @@ class Resource(resource.Resource):
         elif os.path.isfile(uid):
             os.remove(uid)
         else:
-            raise exceptions.NotFound
+            raise responses.NotFound
 
 class One(endpoints.Endpoint):
     def identify(self, request):

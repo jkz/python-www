@@ -16,17 +16,17 @@ class Post(dummy.Dummy):
 class UserPosts(dummy.Dummy):
     pass
 
-class File(fs.Resource)
-	root = '/tmp/resttestdata'
+class File(fs.Resource):
+    root = '/tmp/resttestdata'
 
 api = Route('',
 	dummy = Route('/dummy',
 	    users = routes.crud('/users', User()),
-	    posts = routes.crud('/posts', Post()),)
-	files = routes.crud('/files', one=Str('.*'))
-	    users = routes.crud('', File()),
+	    posts = routes.crud('/posts', Post()),
+        ),
+	files = routes.crud('/files', File(), one=routes.Str('.*')),
 )
-api.users.one.routes['posts'] = Route('/posts', UserPosts())
+api.dummy.users.one.routes['posts'] = Route('/posts', UserPosts())
 
 wsgi.Server('localhost', 333, stack.build(api)).forever()
 

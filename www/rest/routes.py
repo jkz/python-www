@@ -1,4 +1,4 @@
-from www.server.routes import Route, Int, Ints
+from www.server.routes import *
 
 from .endpoints import One, Few, All
 
